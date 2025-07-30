@@ -5,10 +5,16 @@ namespace App\Services;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Exception;
 
 class BinanceP2PService
 {
     private const API_URL = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
+    private const RATE_LIMIT_KEY = 'binance-p2p-api';
+    private const RATE_LIMIT_MAX_ATTEMPTS = 60; // 60 requests per minute
+    private const RETRY_ATTEMPTS = 3;
+    private const RETRY_DELAY_MS = 1000; // 1 second between retries
     
     private array $defaultHeaders = [
         'accept' => '*/*',
@@ -34,6 +40,9 @@ class BinanceP2PService
         'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
     ];
 
+    /**
+     * Get P2P data with retry logic and rate limiting
+     */
     public function getP2PData(
         string $asset = 'USDT',
         string $fiat = 'VES',
@@ -42,12 +51,23 @@ class BinanceP2PService
         int $rows = 50,
         ?float $transAmount = null
     ): ?array {
+        // Check rate limit
+        if (RateLimiter::tooManyAttempts(self::RATE_LIMIT_KEY, self::RATE_LIMIT_MAX_ATTEMPTS)) {
+            Log::warning('Binance P2P API rate limit exceeded', [
+                'asset' => $asset,
+                'fiat' => $fiat,
+                'trade_type' => $tradeType
+            ]);
+            return null;
+        }
+
         $payload = [
-            'fiat' => $fiat,
+            'fiat' => strtoupper($fiat),
             'page' => $page,
-            'rows' => $rows,
-            'tradeType' => $tradeType,
-            'asset' => $asset,
+            'rows' => min($rows, 10), // Match example that uses 10 rows
+            'transAmount' => $transAmount ?? 1000, // Always include transAmount like the example
+            'tradeType' => strtoupper($tradeType),
+            'asset' => strtoupper($asset),
             'countries' => [],
             'proMerchantAds' => false,
             'shieldMerchantAds' => false,
@@ -61,34 +81,44 @@ class BinanceP2PService
             'followed' => false,
         ];
 
-        if ($transAmount !== null) {
-            $payload['transAmount'] = $transAmount;
-        }
-
-        try {
+        // Execute with retry logic
+        return $this->executeWithRetry(function () use ($payload) {
+            RateLimiter::hit(self::RATE_LIMIT_KEY);
+            
+            $startTime = microtime(true);
+            
             $response = Http::withHeaders($this->defaultHeaders)
                 ->timeout(30)
+                ->connectTimeout(10)
                 ->post(self::API_URL, $payload);
 
+            $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
             if ($response->successful()) {
-                return $response->json();
+                $data = $response->json();
+                
+                // Validate response structure
+                if (!$this->validateApiResponse($data)) {
+                    throw new Exception('Invalid API response structure');
+                }
+                
+                // Log successful request
+                Log::debug('Binance P2P API request successful', [
+                    'asset' => $payload['asset'],
+                    'fiat' => $payload['fiat'],
+                    'trade_type' => $payload['tradeType'],
+                    'response_time_ms' => $responseTime,
+                    'ads_count' => count($data['data'] ?? [])
+                ]);
+                
+                return $data;
             }
 
-            Log::warning('Binance P2P API request failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-                'payload' => $payload,
-            ]);
-
+            // Handle specific HTTP errors
+            $this->handleHttpError($response, $payload);
+            
             return null;
-        } catch (RequestException $e) {
-            Log::error('Binance P2P API request exception', [
-                'message' => $e->getMessage(),
-                'payload' => $payload,
-            ]);
-
-            return null;
-        }
+        });
     }
 
     public function getBuyPrices(string $asset = 'USDT', string $fiat = 'VES', int $rows = 50): ?array
@@ -167,5 +197,192 @@ class BinanceP2PService
         }
 
         return $summary;
+    }
+
+    /**
+     * Execute API call with retry logic
+     */
+    private function executeWithRetry(callable $callback): mixed
+    {
+        $lastException = null;
+        
+        for ($attempt = 1; $attempt <= self::RETRY_ATTEMPTS; $attempt++) {
+            try {
+                return $callback();
+            } catch (Exception $e) {
+                $lastException = $e;
+                
+                Log::warning('Binance P2P API attempt failed', [
+                    'attempt' => $attempt,
+                    'max_attempts' => self::RETRY_ATTEMPTS,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Don't retry on last attempt
+                if ($attempt < self::RETRY_ATTEMPTS) {
+                    // Exponential backoff: delay increases with each attempt
+                    $delay = self::RETRY_DELAY_MS * pow(2, $attempt - 1);
+                    usleep($delay * 1000); // Convert to microseconds
+                }
+            }
+        }
+        
+        // Log final failure
+        Log::error('Binance P2P API request failed after all retries', [
+            'attempts' => self::RETRY_ATTEMPTS,
+            'final_error' => $lastException?->getMessage()
+        ]);
+        
+        return null;
+    }
+
+    /**
+     * Validate API response structure
+     */
+    private function validateApiResponse(array $data): bool
+    {
+        // Check required fields
+        if (!isset($data['code']) || !isset($data['data'])) {
+            return false;
+        }
+        
+        // Check success code
+        if ($data['code'] !== '000000') {
+            Log::warning('Binance P2P API returned error code', [
+                'code' => $data['code'],
+                'message' => $data['message'] ?? 'Unknown error'
+            ]);
+            return false;
+        }
+        
+        // Validate data array
+        if (!is_array($data['data'])) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Handle HTTP errors with specific logic
+     */
+    private function handleHttpError($response, array $payload): void
+    {
+        $status = $response->status();
+        $body = $response->body();
+        
+        $logData = [
+            'status' => $status,
+            'payload' => $payload,
+            'response_body' => $body
+        ];
+        
+        switch ($status) {
+            case 429:
+                Log::warning('Binance P2P API rate limit hit', $logData);
+                // Clear our rate limiter to sync with server
+                RateLimiter::clear(self::RATE_LIMIT_KEY);
+                break;
+                
+            case 403:
+                Log::error('Binance P2P API access forbidden', $logData);
+                break;
+                
+            case 400:
+                Log::error('Binance P2P API bad request', $logData);
+                break;
+                
+            case 500:
+            case 502:
+            case 503:
+                Log::warning('Binance P2P API server error', $logData);
+                break;
+                
+            default:
+                Log::warning('Binance P2P API unexpected error', $logData);
+        }
+    }
+
+
+    /**
+     * Get enhanced price metrics with additional statistics
+     */
+    public function getEnhancedPriceMetrics(array $priceData): array
+    {
+        $basicMetrics = $this->calculatePriceMetrics($priceData);
+        
+        if (empty($priceData['data'])) {
+            return array_merge($basicMetrics, [
+                'volume_weighted_average' => 0,
+                'median' => 0,
+                'standard_deviation' => 0,
+                'total_volume' => 0,
+                'price_distribution' => []
+            ]);
+        }
+
+        $ads = collect($priceData['data']);
+        $prices = $ads->pluck('adv.price')->map(fn($p) => (float) $p);
+        $volumes = $ads->pluck('adv.surplusAmount')->map(fn($v) => (float) $v);
+        
+        // Volume weighted average
+        $totalVolume = $volumes->sum();
+        $weightedSum = $ads->sum(function ($ad) {
+            return (float) $ad['adv']['price'] * (float) $ad['adv']['surplusAmount'];
+        });
+        
+        $volumeWeightedAvg = $totalVolume > 0 ? $weightedSum / $totalVolume : 0;
+        
+        // Standard deviation
+        $mean = $prices->avg();
+        $variance = $prices->map(fn($price) => pow($price - $mean, 2))->avg();
+        $standardDeviation = sqrt($variance);
+        
+        // Price distribution (quartiles)
+        $sortedPrices = $prices->sort()->values();
+        $count = $sortedPrices->count();
+        
+        $distribution = [];
+        if ($count > 0) {
+            $distribution = [
+                'q1' => $sortedPrices[intval($count * 0.25)] ?? 0,
+                'q2' => $sortedPrices[intval($count * 0.5)] ?? 0,
+                'q3' => $sortedPrices[intval($count * 0.75)] ?? 0,
+                'p90' => $sortedPrices[intval($count * 0.9)] ?? 0,
+                'p95' => $sortedPrices[intval($count * 0.95)] ?? 0,
+            ];
+        }
+        
+        return array_merge($basicMetrics, [
+            'volume_weighted_average' => round($volumeWeightedAvg, 2),
+            'median' => round($prices->median(), 2),
+            'standard_deviation' => round($standardDeviation, 2),
+            'total_volume' => round($totalVolume, 2),
+            'price_distribution' => $distribution
+        ]);
+    }
+
+
+    /**
+     * Get API health status
+     */
+    public function getHealthStatus(): array
+    {
+        $rateLimitRemaining = self::RATE_LIMIT_MAX_ATTEMPTS - RateLimiter::attempts(self::RATE_LIMIT_KEY);
+        $rateLimitResetTime = RateLimiter::availableIn(self::RATE_LIMIT_KEY);
+        
+        return [
+            'api_url' => self::API_URL,
+            'rate_limit' => [
+                'max_attempts' => self::RATE_LIMIT_MAX_ATTEMPTS,
+                'remaining' => max(0, $rateLimitRemaining),
+                'reset_in_seconds' => $rateLimitResetTime,
+                'is_limited' => RateLimiter::tooManyAttempts(self::RATE_LIMIT_KEY, self::RATE_LIMIT_MAX_ATTEMPTS)
+            ],
+            'retry_config' => [
+                'max_attempts' => self::RETRY_ATTEMPTS,
+                'delay_ms' => self::RETRY_DELAY_MS
+            ]
+        ];
     }
 }

@@ -19,9 +19,9 @@ return new class extends Migration
             $table->json('collection_metadata')->nullable(); // API response time, etc.
             $table->timestamps();
 
-            $table->index(['trading_pair_id', 'trade_type', 'collected_at']);
-            $table->index('collected_at');
-            $table->index('data_quality_score');
+            $table->index(['trading_pair_id', 'trade_type', 'collected_at'], 'idx_snapshots_pair_type_time');
+            $table->index('collected_at', 'idx_snapshots_collected_at');
+            $table->index('data_quality_score', 'idx_snapshots_quality');
         });
     }
 
