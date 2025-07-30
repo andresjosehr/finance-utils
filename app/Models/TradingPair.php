@@ -1,0 +1,135 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class TradingPair extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'asset',
+        'fiat',
+        'pair_symbol',
+        'is_active',
+        'collection_interval_minutes',
+        'collection_config',
+        'min_trade_amount',
+        'max_trade_amount',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'collection_config' => 'array',
+        'min_trade_amount' => 'decimal:8',
+        'max_trade_amount' => 'decimal:8',
+        'collection_interval_minutes' => 'integer',
+    ];
+
+    /**
+     * Get all market snapshots for this trading pair
+     */
+    public function marketSnapshots(): HasMany
+    {
+        return $this->hasMany(P2PMarketSnapshot::class);
+    }
+
+    /**
+     * Get recent market snapshots
+     */
+    public function recentSnapshots(int $hours = 24): HasMany
+    {
+        return $this->marketSnapshots()
+            ->where('collected_at', '>=', now()->subHours($hours))
+            ->orderBy('collected_at', 'desc');
+    }
+
+    /**
+     * Get the latest snapshot for a specific trade type
+     */
+    public function latestSnapshot(string $tradeType = 'BUY'): ?P2PMarketSnapshot
+    {
+        return $this->marketSnapshots()
+            ->where('trade_type', $tradeType)
+            ->orderBy('collected_at', 'desc')
+            ->first();
+    }
+
+    /**
+     * Check if data collection is due for this pair
+     */
+    public function isCollectionDue(): bool
+    {
+        if (!$this->is_active) {
+            return false;
+        }
+
+        $latestSnapshot = $this->marketSnapshots()
+            ->orderBy('collected_at', 'desc')
+            ->first();
+
+        if (!$latestSnapshot) {
+            return true;
+        }
+
+        $nextCollection = $latestSnapshot->collected_at->addMinutes($this->collection_interval_minutes);
+        
+        return now()->greaterThanOrEqualTo($nextCollection);
+    }
+
+    /**
+     * Create a trading pair from asset and fiat symbols
+     */
+    public static function createPair(
+        string $asset,
+        string $fiat,
+        array $config = [],
+        int $intervalMinutes = 5
+    ): self {
+        return self::create([
+            'asset' => strtoupper($asset),
+            'fiat' => strtoupper($fiat),
+            'pair_symbol' => strtoupper($asset) . '/' . strtoupper($fiat),
+            'is_active' => true,
+            'collection_interval_minutes' => $intervalMinutes,
+            'collection_config' => $config,
+        ]);
+    }
+
+    /**
+     * Get all active trading pairs that need data collection
+     */
+    public static function needingCollection(): \Illuminate\Database\Eloquent\Collection
+    {
+        return self::where('is_active', true)
+            ->get()
+            ->filter(fn($pair) => $pair->isCollectionDue());
+    }
+
+    /**
+     * Scope for active pairs only
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope for specific asset
+     */
+    public function scopeForAsset($query, string $asset)
+    {
+        return $query->where('asset', strtoupper($asset));
+    }
+
+    /**
+     * Scope for specific fiat
+     */
+    public function scopeForFiat($query, string $fiat)
+    {
+        return $query->where('fiat', strtoupper($fiat));
+    }
+}

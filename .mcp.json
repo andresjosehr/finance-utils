@@ -1,0 +1,45 @@
+{
+  "mcpServers": {
+    "ccxt-exchange-data": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/var/www/finance-utils/mcp-servers/mcp-servers/mcp-server-ccxt/build/index.js"
+      ],
+      "env": {}
+    },
+    "playwright-browser": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/var/www/finance-utils/mcp-servers/mcp-servers/playwright-mcp/lib/index.js"
+      ],
+      "env": {}
+    },
+    "ashra-data-extraction": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/var/www/finance-utils/mcp-servers/mcp-servers/ashra-mcp/build/index.js"
+      ],
+      "env": {}
+    },
+    "coincap-crypto-prices": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/var/www/finance-utils/mcp-servers/mcp-servers/coincap-mcp/build/index.js"
+      ],
+      "env": {}
+    },
+    "dbhub-database": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/var/www/finance-utils/mcp-servers/dbhub/dist/index.js",
+        "--demo"
+      ],
+      "env": {}
+    }
+  }
+}
