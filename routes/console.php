@@ -9,9 +9,31 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule P2P data collection every 5 minutes
-Schedule::job(new CollectP2PMarketDataJob())
-    ->everyFiveMinutes()
+// Schedule P2P data collection with dynamic intervals based on trading pairs
+// Check every minute for pairs that need collection, but respect individual intervals
+Schedule::call(function () {
+    $pairsNeedingCollection = \App\Models\TradingPair::needingCollection();
+    
+    if ($pairsNeedingCollection->isEmpty()) {
+        return; // No pairs need collection right now
+    }
+    
+    // Group pairs by collection interval to optimize job dispatching
+    $pairsByInterval = $pairsNeedingCollection->groupBy('collection_interval_minutes');
+    
+    foreach ($pairsByInterval as $intervalMinutes => $pairs) {
+        foreach ($pairs as $pair) {
+            \App\Jobs\CollectP2PMarketDataJob::dispatch($pair->id, false)
+                ->onQueue('p2p-data-collection');
+        }
+    }
+    
+    \Illuminate\Support\Facades\Log::info('Dispatched P2P collection jobs', [
+        'total_pairs' => $pairsNeedingCollection->count(),
+        'pairs_by_interval' => $pairsByInterval->map->count()->toArray()
+    ]);
+})
+    ->everyMinute()
     ->name('collect-p2p-data')
     ->withoutOverlapping(10) // Prevent overlapping executions, timeout after 10 minutes
     ->onOneServer(); // Only run on one server in multi-server setup

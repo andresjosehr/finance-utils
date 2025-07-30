@@ -13,13 +13,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // P2P Market Data Collection - Every minute
-        $schedule->job(new CollectP2PMarketDataJob())
-            ->everyMinute()
-            ->name('collect-p2p-market-data')
-            ->withoutOverlapping(10) // Prevent overlapping for up to 10 minutes
-            ->onOneServer() // Run only on one server in multi-server setup
-            ->runInBackground();
+        // P2P Market Data Collection is configured in routes/console.php
 
         // Optional: Clean up old failed jobs daily
         $schedule->command('queue:prune-failed --hours=72')

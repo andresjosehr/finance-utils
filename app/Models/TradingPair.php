@@ -75,8 +75,13 @@ class TradingPair extends Model
             return true;
         }
 
-        $nextCollection = $latestSnapshot->collected_at->addMinutes($this->collection_interval_minutes);
+        // For 1-minute intervals, always collect since Laravel schedule can't run faster than every minute
+        if ($this->collection_interval_minutes == 1) {
+            return true;
+        }
         
+        // For longer intervals, check if enough time has passed
+        $nextCollection = $latestSnapshot->collected_at->addMinutes($this->collection_interval_minutes);
         return now()->greaterThanOrEqualTo($nextCollection);
     }
 
@@ -107,6 +112,49 @@ class TradingPair extends Model
         return self::where('is_active', true)
             ->get()
             ->filter(fn($pair) => $pair->isCollectionDue());
+    }
+
+    /**
+     * Get the time until next collection is due
+     */
+    public function timeUntilNextCollection(): ?int
+    {
+        if (!$this->is_active) {
+            return null;
+        }
+
+        $latestSnapshot = $this->marketSnapshots()
+            ->orderBy('collected_at', 'desc')
+            ->first();
+
+        if (!$latestSnapshot) {
+            return 0; // Collection due immediately
+        }
+
+        $nextCollection = $latestSnapshot->collected_at->addMinutes($this->collection_interval_minutes);
+        $secondsUntilNext = now()->diffInSeconds($nextCollection, false);
+        
+        return max(0, (int) $secondsUntilNext);
+    }
+
+    /**
+     * Get detailed collection status for monitoring
+     */
+    public function getCollectionStatus(): array
+    {
+        $latestSnapshot = $this->marketSnapshots()
+            ->orderBy('collected_at', 'desc')
+            ->first();
+
+        return [
+            'pair_symbol' => $this->pair_symbol,
+            'is_active' => $this->is_active,
+            'collection_interval_minutes' => $this->collection_interval_minutes,
+            'last_collection_at' => $latestSnapshot?->collected_at,
+            'minutes_since_last_collection' => $latestSnapshot ? now()->diffInMinutes($latestSnapshot->collected_at) : null,
+            'is_collection_due' => $this->isCollectionDue(),
+            'seconds_until_next_collection' => $this->timeUntilNextCollection(),
+        ];
     }
 
     /**
