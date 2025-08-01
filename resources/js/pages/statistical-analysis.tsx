@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatisticalAnalysisDashboard } from '@/components/statistical-analysis-dashboard';
 import { OutlierAnalysisChart } from '@/components/outlier-analysis-chart';
@@ -198,72 +196,6 @@ export default function StatisticalAnalysisPage() {
                     </div>
                 </div>
 
-                {/* Feature Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                    <Card className="border-border bg-card">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-foreground">Detección de Valores Atípicos</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                            <div className="flex flex-wrap gap-1 mb-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">IQR</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Z-Score</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Z Modificada</Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Identifica y filtra valores atípicos de precios que podrían sesgar los promedios del mercado
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border bg-card">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-foreground">Promedios Ponderados</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                            <div className="flex flex-wrap gap-1 mb-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Por Volumen</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Por Tiempo</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Por Confiabilidad</Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Calcula promedios sofisticados basados en múltiples factores
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border bg-card">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-foreground">Pruebas Estadísticas</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                            <div className="flex flex-wrap gap-1 mb-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Intervalos</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Normalidad</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Tendencias</Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Medidas estadísticas avanzadas y pruebas de hipótesis
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border bg-card">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-foreground">Análisis de Mercado</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                            <div className="flex flex-wrap gap-1 mb-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Volatilidad</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Percentiles</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Comparación</Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Análisis integral de condiciones del mercado y comparación
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
 
                 {/* Analysis Tabs */}
                 <Tabs defaultValue="comprehensive" className="space-y-4">
@@ -306,63 +238,6 @@ export default function StatisticalAnalysisPage() {
                     </TabsContent>
                 </Tabs>
 
-                {/* Statistical Methods Information */}
-                <Card className="mt-6 border-border bg-card">
-                    <CardHeader>
-                        <CardTitle className="text-foreground">Acerca de los Métodos Estadísticos</CardTitle>
-                        <CardDescription className="text-muted-foreground">
-                            Comprendiendo los algoritmos y técnicas utilizados en este análisis
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div>
-                                <h4 className="font-semibold text-foreground mb-2 text-sm">Métodos de Detección de Valores Atípicos</h4>
-                                <div className="space-y-1 text-xs text-muted-foreground">
-                                    <div>
-                                        <strong className="text-foreground">Método IQR:</strong> Usa cuartiles para identificar valores fuera de 1.5 × IQR desde Q1/Q3
-                                    </div>
-                                    <div>
-                                        <strong className="text-foreground">Puntuación Z:</strong> Identifica valores a más de 2.5 desviaciones estándar de la media
-                                    </div>
-                                    <div>
-                                        <strong className="text-foreground">Puntuación Z Modificada:</strong> Usa la desviación absoluta mediana para una detección más robusta
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="font-semibold text-foreground mb-2 text-sm">Promediado Ponderado</h4>
-                                <div className="space-y-1 text-xs text-muted-foreground">
-                                    <div>
-                                        <strong className="text-foreground">Ponderado por Volumen:</strong> Pondera precios por volumen de negociación (VWAP)
-                                    </div>
-                                    <div>
-                                        <strong className="text-foreground">Ponderado por Tiempo:</strong> Da más peso a los puntos de datos recientes
-                                    </div>
-                                    <div>
-                                        <strong className="text-foreground">Ponderado por Confiabilidad:</strong> Pondera por tasas de finalización de comerciantes
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="font-semibold text-foreground mb-2 text-sm">Análisis Estadístico</h4>
-                                <div className="space-y-1 text-xs text-muted-foreground">
-                                    <div>
-                                        <strong className="text-foreground">Intervalos de Confianza:</strong> Rango estadístico para el precio medio real
-                                    </div>
-                                    <div>
-                                        <strong className="text-foreground">Análisis de Percentiles:</strong> Distribución de precios a través de diferentes percentiles
-                                    </div>
-                                    <div>
-                                        <strong className="text-foreground">Análisis de Tendencias:</strong> Regresión lineal para identificar tendencias de precios
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         </AppLayout>
     );

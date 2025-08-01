@@ -16,6 +16,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('statistical-analysis');
     })->name('statistical-analysis');
 
+    Route::get('docs', function () {
+        return Inertia::render('docs');
+    })->name('docs');
+
     // Admin routes for trading pairs management
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('trading-pairs', \App\Http\Controllers\Admin\TradingPairController::class);

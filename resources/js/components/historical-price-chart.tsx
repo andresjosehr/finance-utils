@@ -515,70 +515,124 @@ export function HistoricalPriceChart({
                 </div>
             </div>
 
-            {/* Statistics Overview */}
+            {/* Historical Price Chart with Integrated Statistics */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                        Resumen Estadístico
+                        Evolución de Precios
                         {data.summary?.data_quality ? getQualityBadge(data.summary.data_quality.avg_quality_score) : <Badge variant="secondary">N/A</Badge>}
                     </CardTitle>
-                    <CardDescription>
-                        Métricas principales para el período de {data.hours || selectedHours} horas
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-4 bg-green-50 rounded-lg">
-                            <div className="text-xl font-bold text-green-600">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.min_price, 4) : 'N/A'}
-                            </div>
-                            <div className="text-sm text-green-600">Precio Mínimo</div>
-                        </div>
-                        
-                        <div className="text-center p-4 bg-red-50 rounded-lg">
-                            <div className="text-xl font-bold text-red-600">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.max_price, 4) : 'N/A'}
-                            </div>
-                            <div className="text-sm text-red-600">Precio Máximo</div>
-                        </div>
-                        
-                        <div className="text-center p-4 bg-purple-50 rounded-lg">
-                            <div className="text-xl font-bold text-purple-600">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.avg_price, 4) : 'N/A'}
-                            </div>
-                            <div className="text-sm text-purple-600">Precio Promedio</div>
-                        </div>
-                        
-                        <div className="text-center p-4 bg-blue-50 rounded-lg">
-                            <div className="text-xl font-bold text-blue-600">
-                                {data.summary?.price_summary ? getVolatilityBadge(data.summary.price_summary.price_volatility) : <Badge variant="secondary">N/A</Badge>}
-                            </div>
-                            <div className="text-sm text-blue-600">Volatilidad</div>
-                            <div className="text-xs text-gray-600 mt-1">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.price_volatility, 2) + '%' : 'N/A'}
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Historical Price Chart */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Evolución de Precios</CardTitle>
                     <CardDescription>
                         Gráfico temporal con líneas de precios BUY/SELL y área de spread
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-80 w-full">
-                        {chartData ? (
-                            <Line data={chartData} options={getChartOptions()} />
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500">
-                                No hay datos válidos para mostrar el gráfico
+                    <div className="space-y-4">
+                        {/* Compact Statistics for BUY and SELL */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
+                            {/* BUY Statistics */}
+                            <div className="bg-gray-50 border border-green-200 rounded-md p-3">
+                                <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                    COMPRA (BUY)
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {(() => {
+                                                const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
+                                                const minPrice = buyData.length > 0 ? Math.min(...buyData.map(p => p.avg_price)) : null;
+                                                return minPrice ? formatNumber(minPrice, 4) : 'N/A';
+                                            })()}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Mín</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {(() => {
+                                                const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
+                                                const maxPrice = buyData.length > 0 ? Math.max(...buyData.map(p => p.avg_price)) : null;
+                                                return maxPrice ? formatNumber(maxPrice, 4) : 'N/A';
+                                            })()}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Máx</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {(() => {
+                                                const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
+                                                const avgPrice = buyData.length > 0 ? buyData.reduce((sum, p) => sum + p.avg_price, 0) / buyData.length : null;
+                                                return avgPrice ? formatNumber(avgPrice, 4) : 'N/A';
+                                            })()}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Prom</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {data.historical_data?.filter(point => point.trade_type === 'BUY').length || 0}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Pts</div>
+                                    </div>
+                                </div>
                             </div>
-                        )}
+
+                            {/* SELL Statistics */}
+                            <div className="bg-gray-50 border border-red-200 rounded-md p-3">
+                                <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                    VENTA (SELL)
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {(() => {
+                                                const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
+                                                const minPrice = sellData.length > 0 ? Math.min(...sellData.map(p => p.avg_price)) : null;
+                                                return minPrice ? formatNumber(minPrice, 4) : 'N/A';
+                                            })()}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Mín</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {(() => {
+                                                const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
+                                                const maxPrice = sellData.length > 0 ? Math.max(...sellData.map(p => p.avg_price)) : null;
+                                                return maxPrice ? formatNumber(maxPrice, 4) : 'N/A';
+                                            })()}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Máx</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {(() => {
+                                                const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
+                                                const avgPrice = sellData.length > 0 ? sellData.reduce((sum, p) => sum + p.avg_price, 0) / sellData.length : null;
+                                                return avgPrice ? formatNumber(avgPrice, 4) : 'N/A';
+                                            })()}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Prom</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {data.historical_data?.filter(point => point.trade_type === 'SELL').length || 0}
+                                        </div>
+                                        <div className="text-xs text-gray-600">Pts</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Chart */}
+                        <div className="h-80 w-full">
+                            {chartData ? (
+                                <Line data={chartData} options={getChartOptions()} />
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-gray-500">
+                                    No hay datos válidos para mostrar el gráfico
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </CardContent>
             </Card>
