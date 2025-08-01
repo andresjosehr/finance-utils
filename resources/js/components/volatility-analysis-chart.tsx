@@ -134,9 +134,17 @@ export function VolatilityAnalysisChart({
                 break;
         }
 
+        const translations = {
+            'very_low': 'MUY BAJA',
+            'low': 'BAJA',
+            'moderate': 'MODERADA',
+            'high': 'ALTA',
+            'very_high': 'MUY ALTA'
+        };
+
         return (
             <Badge variant={variant}>
-                {classification.replace('_', ' ').toUpperCase()}
+                {translations[classification as keyof typeof translations] || classification.replace('_', ' ').toUpperCase()}
             </Badge>
         );
     };
@@ -156,7 +164,13 @@ export function VolatilityAnalysisChart({
                 break;
         }
 
-        return <Badge variant={variant}>{level}</Badge>;
+        const translations = {
+            'high': 'ALTA',
+            'moderate': 'MODERADA',
+            'low': 'BAJA'
+        };
+
+        return <Badge variant={variant}>{translations[level as keyof typeof translations] || level}</Badge>;
     };
 
     const getNormalityBadge = (assessment: string): React.ReactNode => {
@@ -174,7 +188,13 @@ export function VolatilityAnalysisChart({
                 break;
         }
 
-        return <Badge variant={variant}>{assessment.replace('_', ' ')}</Badge>;
+        const translations = {
+            'likely_normal': 'PROBABLEMENTE NORMAL',
+            'moderately_normal': 'MODERADAMENTE NORMAL',
+            'likely_non_normal': 'PROBABLEMENTE NO NORMAL'
+        };
+
+        return <Badge variant={variant}>{translations[assessment as keyof typeof translations] || assessment.replace('_', ' ')}</Badge>;
     };
 
     const getQualityBadge = (score: number): React.ReactNode => {
@@ -224,17 +244,17 @@ export function VolatilityAnalysisChart({
     if (!data) {
         return (
             <Alert className={cn("border-border bg-muted/20", className)}>
-                <AlertTitle className="text-foreground">No Data</AlertTitle>
-                <AlertDescription className="text-muted-foreground">No volatility analysis data available.</AlertDescription>
+                <AlertTitle className="text-foreground">Sin Datos</AlertTitle>
+                <AlertDescription className="text-muted-foreground">No hay datos de análisis de volatilidad disponibles.</AlertDescription>
             </Alert>
         );
     }
 
     const rollingPeriods = [
-        { key: 'rolling_volatility_5', period: 5, name: '5-Period' },
-        { key: 'rolling_volatility_10', period: 10, name: '10-Period' },
-        { key: 'rolling_volatility_20', period: 20, name: '20-Period' },
-        { key: 'rolling_volatility_50', period: 50, name: '50-Period' },
+        { key: 'rolling_volatility_5', period: 5, name: '5-Períodos' },
+        { key: 'rolling_volatility_10', period: 10, name: '10-Períodos' },
+        { key: 'rolling_volatility_20', period: 20, name: '20-Períodos' },
+        { key: 'rolling_volatility_50', period: 50, name: '50-Períodos' },
     ];
 
     return (
@@ -243,10 +263,10 @@ export function VolatilityAnalysisChart({
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-foreground">
-                        Volatility Analysis: {data.asset}/{data.fiat} ({data.trade_type})
+                        Análisis de Volatilidad: {data.asset}/{data.fiat} ({data.trade_type})
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                        Market volatility and price stability analysis
+                        Análisis de volatilidad del mercado y estabilidad de precios
                     </p>
                 </div>
                 
@@ -272,11 +292,11 @@ export function VolatilityAnalysisChart({
             <Card className="border-border bg-card">
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between text-foreground">
-                        Volatility Overview
+                        Resumen de Volatilidad
                         {getVolatilityBadge(data.volatility_analysis.volatility_classification)}
                     </CardTitle>
                     <CardDescription className="text-muted-foreground">
-                        Current market volatility metrics and classification
+                        Métricas actuales de volatilidad del mercado y clasificación
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -285,15 +305,15 @@ export function VolatilityAnalysisChart({
                             <div className="text-2xl font-bold text-foreground">
                                 {formatNumber(data.volatility_analysis.absolute_volatility, 6)}
                             </div>
-                            <div className="text-sm text-foreground">Absolute Volatility</div>
-                            <div className="text-xs text-muted-foreground mt-1">Standard deviation of prices</div>
+                            <div className="text-sm text-foreground">Volatilidad Absoluta</div>
+                            <div className="text-xs text-muted-foreground mt-1">Desviación estándar de precios</div>
                         </div>
                         
                         <div className="text-center p-4 bg-muted/30 border border-border rounded-lg">
                             <div className="text-2xl font-bold text-foreground">
                                 {formatPercentage(data.volatility_analysis.relative_volatility)}
                             </div>
-                            <div className="text-sm text-foreground">Relative Volatility</div>
+                            <div className="text-sm text-foreground">Volatilidad Relativa</div>
                             <div className="text-xs text-muted-foreground mt-1">Coeficiente de variación</div>
                         </div>
                         
@@ -301,8 +321,8 @@ export function VolatilityAnalysisChart({
                             <div className="text-2xl font-bold text-foreground">
                                 {data.sample_size}
                             </div>
-                            <div className="text-sm text-foreground">Sample Size</div>
-                            <div className="text-xs text-muted-foreground mt-1">Data points analyzed</div>
+                            <div className="text-sm text-foreground">Tamaño de Muestra</div>
+                            <div className="text-xs text-muted-foreground mt-1">Puntos de datos analizados</div>
                         </div>
                     </div>
                 </CardContent>
@@ -313,7 +333,7 @@ export function VolatilityAnalysisChart({
                 <CardHeader>
                     <CardTitle className="text-foreground">Análisis de Volatilidad Móvil</CardTitle>
                     <CardDescription className="text-muted-foreground">
-                        Volatility patterns across different time windows
+                        Patrones de volatilidad en diferentes ventanas de tiempo
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -325,8 +345,8 @@ export function VolatilityAnalysisChart({
                                 return (
                                     <div key={key} className="text-center p-4 bg-muted/30 border border-border rounded-lg">
                                         <div className="text-lg text-muted-foreground/60">N/A</div>
-                                        <div className="text-sm text-muted-foreground/80">{name} Rolling</div>
-                                        <div className="text-xs text-muted-foreground/60">Insufficient data</div>
+                                        <div className="text-sm text-muted-foreground/80">{name} Móvil</div>
+                                        <div className="text-xs text-muted-foreground/60">Datos insuficientes</div>
                                     </div>
                                 );
                             }
@@ -336,12 +356,12 @@ export function VolatilityAnalysisChart({
                                     <div className="text-lg font-semibold text-foreground">
                                         {formatNumber(rollingData.average, 6)}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">{name} Rolling</div>
+                                    <div className="text-sm text-muted-foreground">{name} Móvil</div>
                                     <div className="text-xs text-muted-foreground/80 mt-1">
-                                        Range: {formatNumber(rollingData.min, 6)} - {formatNumber(rollingData.max, 6)}
+                                        Rango: {formatNumber(rollingData.min, 6)} - {formatNumber(rollingData.max, 6)}
                                     </div>
                                     <div className="text-xs text-muted-foreground/80">
-                                        {rollingData.values.length} windows
+                                        {rollingData.values.length} ventanas
                                     </div>
                                 </div>
                             );
@@ -355,8 +375,8 @@ export function VolatilityAnalysisChart({
                 {/* Statistical Tests */}
                 <Card className="border-border bg-card">
                     <CardHeader>
-                        <CardTitle className="text-foreground">Statistical Tests</CardTitle>
-                        <CardDescription className="text-muted-foreground">Data distribution and consistency analysis</CardDescription>
+                        <CardTitle className="text-foreground">Pruebas Estadísticas</CardTitle>
+                        <CardDescription className="text-muted-foreground">Análisis de distribución de datos y consistencia</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Normality Test */}
@@ -393,7 +413,7 @@ export function VolatilityAnalysisChart({
                                     <span className="font-semibold">{formatPercentage(data.statistical_tests.data_consistency.coefficient_of_variation)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Data Spread:</span>
+                                    <span>Dispersión de Datos:</span>
                                     <span className="font-semibold capitalize">{data.statistical_tests.data_consistency.data_spread.replace('_', ' ')}</span>
                                 </div>
                             </div>
@@ -408,7 +428,7 @@ export function VolatilityAnalysisChart({
                             Métricas de Calidad
                             {getQualityBadge(data.quality_metrics.quality_score)}
                         </CardTitle>
-                        <CardDescription className="text-muted-foreground">Data quality and reliability indicators</CardDescription>
+                        <CardDescription className="text-muted-foreground">Indicadores de calidad y confiabilidad de datos</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -443,63 +463,63 @@ export function VolatilityAnalysisChart({
             {/* Volatility Interpretation */}
             <Card className="border-border bg-card">
                 <CardHeader>
-                    <CardTitle className="text-foreground">Volatility Interpretation</CardTitle>
-                    <CardDescription className="text-muted-foreground">What the volatility metrics mean for trading</CardDescription>
+                    <CardTitle className="text-foreground">Interpretación de Volatilidad</CardTitle>
+                    <CardDescription className="text-muted-foreground">Qué significan las métricas de volatilidad para el trading</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
                         {/* Classification Explanation */}
                         <div className="p-4 bg-muted/30 border border-border rounded-lg">
-                            <h4 className="font-semibold mb-2">Current Classification: {data.volatility_analysis.volatility_classification.replace('_', ' ').toUpperCase()}</h4>
+                            <h4 className="font-semibold mb-2">Clasificación Actual: {data.volatility_analysis.volatility_classification === 'very_low' ? 'MUY BAJA' : data.volatility_analysis.volatility_classification === 'low' ? 'BAJA' : data.volatility_analysis.volatility_classification === 'moderate' ? 'MODERADA' : data.volatility_analysis.volatility_classification === 'high' ? 'ALTA' : data.volatility_analysis.volatility_classification === 'very_high' ? 'MUY ALTA' : data.volatility_analysis.volatility_classification.replace('_', ' ').toUpperCase()}</h4>
                             <p className="text-sm text-foreground">
                                 {data.volatility_analysis.volatility_classification === 'very_low' && 
-                                    "Extremely stable market with minimal price fluctuations. Lower profit potential but also lower risk."}
+                                    "Mercado extremadamente estable con fluctuaciones mínimas de precios. Menor potencial de ganancias pero también menor riesgo."}
                                 {data.volatility_analysis.volatility_classification === 'low' && 
-                                    "Stable market conditions with predictable price movements. Good for conservative trading strategies."}
+                                    "Condiciones de mercado estables con movimientos de precios predecibles. Bueno para estrategias de trading conservadoras."}
                                 {data.volatility_analysis.volatility_classification === 'moderate' && 
-                                    "Balanced market volatility. Offers reasonable profit opportunities with manageable risk levels."}
+                                    "Volatilidad de mercado equilibrada. Ofrece oportunidades de ganancia razonables con niveles de riesgo manejables."}
                                 {data.volatility_analysis.volatility_classification === 'high' && 
-                                    "Volatile market with significant price swings. Higher profit potential but increased risk of losses."}
+                                    "Mercado volátil con oscilaciones significativas de precios. Mayor potencial de ganancias pero mayor riesgo de pérdidas."}
                                 {data.volatility_analysis.volatility_classification === 'very_high' && 
-                                    "Extremely volatile market conditions. High profit potential but very risky. Suitable only for experienced traders."}
+                                    "Condiciones de mercado extremadamente volátiles. Alto potencial de ganancias pero muy riesgoso. Adecuado solo para traders experimentados."}
                             </p>
                         </div>
 
                         {/* Trading Implications */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="p-4 border rounded-lg">
-                                <h5 className="font-semibold text-foreground mb-2">Opportunities</h5>
+                                <h5 className="font-semibold text-foreground mb-2">Oportunidades</h5>
                                 <ul className="text-sm text-foreground space-y-1">
                                     {data.volatility_analysis.relative_volatility > 20 ? (
                                         <>
-                                            <li>• High arbitrage potential</li>
-                                            <li>• Good for swing trading</li>
-                                            <li>• Profit from price swings</li>
+                                            <li>• Alto potencial de arbitraje</li>
+                                            <li>• Bueno para swing trading</li>
+                                            <li>• Ganancia por oscilaciones de precio</li>
                                         </>
                                     ) : (
                                         <>
-                                            <li>• Stable price predictions</li>
-                                            <li>• Lower transaction costs</li>
-                                            <li>• Good for large volume trades</li>
+                                            <li>• Predicciones de precio estables</li>
+                                            <li>• Menores costos de transacción</li>
+                                            <li>• Bueno para operaciones de gran volumen</li>
                                         </>
                                     )}
                                 </ul>
                             </div>
                             
                             <div className="p-4 border rounded-lg">
-                                <h5 className="font-semibold text-foreground mb-2">Risks</h5>
+                                <h5 className="font-semibold text-foreground mb-2">Riesgos</h5>
                                 <ul className="text-sm text-foreground space-y-1">
                                     {data.volatility_analysis.relative_volatility > 20 ? (
                                         <>
-                                            <li>• High price unpredictability</li>
-                                            <li>• Potential for large losses</li>
-                                            <li>• Timing becomes critical</li>
+                                            <li>• Alta impredecibilidad de precios</li>
+                                            <li>• Potencial de grandes pérdidas</li>
+                                            <li>• El timing se vuelve crítico</li>
                                         </>
                                     ) : (
                                         <>
-                                            <li>• Limited profit opportunities</li>
-                                            <li>• Market may be stagnant</li>
-                                            <li>• Lower return potential</li>
+                                            <li>• Oportunidades de ganancia limitadas</li>
+                                            <li>• El mercado puede estar estancado</li>
+                                            <li>• Menor potencial de retorno</li>
                                         </>
                                     )}
                                 </ul>

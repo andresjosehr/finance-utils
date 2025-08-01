@@ -139,7 +139,7 @@ export default function StatisticalAnalysisPage() {
         <AppLayout>
             <Head title="Análisis Estadístico" />
             
-            <div className="space-y-4 p-3 max-w-none">
+            <div className="space-y-4 p-8 max-w-none">
                 {/* Page Header */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
                     <div className="flex-1">

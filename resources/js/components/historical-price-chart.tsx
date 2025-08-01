@@ -268,24 +268,28 @@ export function HistoricalPriceChart({
                 {
                     label: 'Precio de Compra',
                     data: buyPrices,
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgb(34, 197, 94)',
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgb(16, 185, 129)',
+                    pointBorderColor: 'rgb(255, 255, 255)',
+                    pointBorderWidth: 2,
                     tension: 0.1,
                     spanGaps: true,
                 },
                 {
                     label: 'Precio de Venta',
                     data: sellPrices,
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgb(239, 68, 68)',
+                    borderColor: 'rgb(220, 38, 127)',
+                    backgroundColor: 'rgba(220, 38, 127, 0.15)',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgb(220, 38, 127)',
+                    pointBorderColor: 'rgb(255, 255, 255)',
+                    pointBorderWidth: 2,
                     tension: 0.1,
                     spanGaps: true,
                 },
@@ -328,12 +332,7 @@ export function HistoricalPriceChart({
             },
             plugins: {
                 title: {
-                    display: true,
-                    text: `Precios Históricos P2P - ${asset}/${fiat}`,
-                    font: {
-                        size: 16,
-                        weight: 'bold' as const,
-                    },
+                    display: false,
                 },
                 legend: {
                     position: 'top' as const,
@@ -516,114 +515,105 @@ export function HistoricalPriceChart({
             </div>
 
             {/* Historical Price Chart with Integrated Statistics */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                        Evolución de Precios
-                        {data.summary?.data_quality ? getQualityBadge(data.summary.data_quality.avg_quality_score) : <Badge variant="secondary">N/A</Badge>}
-                    </CardTitle>
-                    <CardDescription>
-                        Gráfico temporal con líneas de precios BUY/SELL y área de spread
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {/* Compact Statistics for BUY and SELL */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
-                            {/* BUY Statistics */}
-                            <div className="bg-gray-50 border border-green-200 rounded-md p-3">
-                                <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                    COMPRA (BUY)
+            <div className="space-y-6">
+                {/* Compact Statistics for BUY and SELL */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
+                    {/* BUY Statistics */}
+                    <div className="bg-gray-50 dark:bg-gray-800 border-2 border-green-200 dark:border-green-700 rounded-lg p-4">
+                        <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
+                            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                            COMPRA (BUY)
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {(() => {
+                                        const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
+                                        const minPrice = buyData.length > 0 ? Math.min(...buyData.map(p => p.avg_price)) : null;
+                                        return minPrice ? formatNumber(minPrice, 4) : 'N/A';
+                                    })()}
                                 </div>
-                                <div className="grid grid-cols-4 gap-2">
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {(() => {
-                                                const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
-                                                const minPrice = buyData.length > 0 ? Math.min(...buyData.map(p => p.avg_price)) : null;
-                                                return minPrice ? formatNumber(minPrice, 4) : 'N/A';
-                                            })()}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Mín</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {(() => {
-                                                const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
-                                                const maxPrice = buyData.length > 0 ? Math.max(...buyData.map(p => p.avg_price)) : null;
-                                                return maxPrice ? formatNumber(maxPrice, 4) : 'N/A';
-                                            })()}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Máx</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {(() => {
-                                                const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
-                                                const avgPrice = buyData.length > 0 ? buyData.reduce((sum, p) => sum + p.avg_price, 0) / buyData.length : null;
-                                                return avgPrice ? formatNumber(avgPrice, 4) : 'N/A';
-                                            })()}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Prom</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {data.historical_data?.filter(point => point.trade_type === 'BUY').length || 0}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Pts</div>
-                                    </div>
-                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Mín</div>
                             </div>
-
-                            {/* SELL Statistics */}
-                            <div className="bg-gray-50 border border-red-200 rounded-md p-3">
-                                <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                                    VENTA (SELL)
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {(() => {
+                                        const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
+                                        const maxPrice = buyData.length > 0 ? Math.max(...buyData.map(p => p.avg_price)) : null;
+                                        return maxPrice ? formatNumber(maxPrice, 4) : 'N/A';
+                                    })()}
                                 </div>
-                                <div className="grid grid-cols-4 gap-2">
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {(() => {
-                                                const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
-                                                const minPrice = sellData.length > 0 ? Math.min(...sellData.map(p => p.avg_price)) : null;
-                                                return minPrice ? formatNumber(minPrice, 4) : 'N/A';
-                                            })()}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Mín</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {(() => {
-                                                const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
-                                                const maxPrice = sellData.length > 0 ? Math.max(...sellData.map(p => p.avg_price)) : null;
-                                                return maxPrice ? formatNumber(maxPrice, 4) : 'N/A';
-                                            })()}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Máx</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {(() => {
-                                                const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
-                                                const avgPrice = sellData.length > 0 ? sellData.reduce((sum, p) => sum + p.avg_price, 0) / sellData.length : null;
-                                                return avgPrice ? formatNumber(avgPrice, 4) : 'N/A';
-                                            })()}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Prom</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {data.historical_data?.filter(point => point.trade_type === 'SELL').length || 0}
-                                        </div>
-                                        <div className="text-xs text-gray-600">Pts</div>
-                                    </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Máx</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {(() => {
+                                        const buyData = data.historical_data?.filter(point => point.trade_type === 'BUY') || [];
+                                        const avgPrice = buyData.length > 0 ? buyData.reduce((sum, p) => sum + p.avg_price, 0) / buyData.length : null;
+                                        return avgPrice ? formatNumber(avgPrice, 4) : 'N/A';
+                                    })()}
                                 </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Prom</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {data.historical_data?.filter(point => point.trade_type === 'BUY').length || 0}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Pts</div>
                             </div>
                         </div>
-                        
-                        {/* Chart */}
+                    </div>
+
+                    {/* SELL Statistics */}
+                    <div className="bg-gray-50 dark:bg-gray-800 border-2 border-red-200 dark:border-red-700 rounded-lg p-4">
+                        <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
+                            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                            VENTA (SELL)
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {(() => {
+                                        const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
+                                        const minPrice = sellData.length > 0 ? Math.min(...sellData.map(p => p.avg_price)) : null;
+                                        return minPrice ? formatNumber(minPrice, 4) : 'N/A';
+                                    })()}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Mín</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {(() => {
+                                        const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
+                                        const maxPrice = sellData.length > 0 ? Math.max(...sellData.map(p => p.avg_price)) : null;
+                                        return maxPrice ? formatNumber(maxPrice, 4) : 'N/A';
+                                    })()}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Máx</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {(() => {
+                                        const sellData = data.historical_data?.filter(point => point.trade_type === 'SELL') || [];
+                                        const avgPrice = sellData.length > 0 ? sellData.reduce((sum, p) => sum + p.avg_price, 0) / sellData.length : null;
+                                        return avgPrice ? formatNumber(avgPrice, 4) : 'N/A';
+                                    })()}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Prom</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                                    {data.historical_data?.filter(point => point.trade_type === 'SELL').length || 0}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Pts</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Chart */}
+                <Card>
+                    <CardContent className="p-6">
                         <div className="h-80 w-full">
                             {chartData ? (
                                 <Line data={chartData} options={getChartOptions()} />
@@ -633,9 +623,9 @@ export function HistoricalPriceChart({
                                 </div>
                             )}
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Data Quality and Metadata */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -644,20 +634,23 @@ export function HistoricalPriceChart({
                         <CardTitle>Calidad de los Datos</CardTitle>
                         <CardDescription>Métricas de integridad y completitud de datos</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex justify-between">
+                    <CardContent className="space-y-0">
+                        <div className="flex justify-between py-3">
                             <span>Puntos de datos totales:</span>
                             <span className="font-semibold">{data.summary?.total_data_points || 0}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                        <div className="flex justify-between py-3">
                             <span>Calidad promedio:</span>
                             <span className="font-semibold">{data.summary?.data_quality ? formatNumber(data.summary.data_quality.avg_quality_score, 3) : 'N/A'}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                        <div className="flex justify-between py-3">
                             <span>Calidad mínima:</span>
                             <span className="font-semibold text-red-600">{data.summary?.data_quality ? formatNumber(data.summary.data_quality.min_quality_score, 3) : 'N/A'}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                        <div className="flex justify-between py-3">
                             <span>Calidad máxima:</span>
                             <span className="font-semibold text-green-600">{data.summary?.data_quality ? formatNumber(data.summary.data_quality.max_quality_score, 3) : 'N/A'}</span>
                         </div>
@@ -669,20 +662,23 @@ export function HistoricalPriceChart({
                         <CardTitle>Información de Recolección</CardTitle>
                         <CardDescription>Metadatos sobre la recolección de datos</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex justify-between">
+                    <CardContent className="space-y-0">
+                        <div className="flex justify-between py-3">
                             <span>Frecuencia de recolección:</span>
                             <span className="font-semibold">5 min</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                        <div className="flex justify-between py-3">
                             <span>Rango temporal:</span>
                             <span className="font-semibold">{data.hours || selectedHours} horas</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                        <div className="flex justify-between py-3">
                             <span>Período de inicio:</span>
                             <span className="font-semibold text-sm">{data.summary?.time_range ? new Date(data.summary.time_range.start).toLocaleString('es-ES') : 'N/A'}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                        <div className="flex justify-between py-3">
                             <span>Período de fin:</span>
                             <span className="font-semibold text-sm">{data.summary?.time_range ? new Date(data.summary.time_range.end).toLocaleString('es-ES') : 'N/A'}</span>
                         </div>

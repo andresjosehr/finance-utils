@@ -412,83 +412,120 @@ export function ComprehensiveMarketAnalysis({
                 {/* Buy Market Analysis */}
                 {data.buy_analysis && (
                     <Card className="border-border bg-card">
-                        <CardHeader>
+                        <CardHeader className="pb-4">
                             <CardTitle className="text-foreground flex items-center justify-between">
-                                Análisis de Mercado de Compra
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    Análisis de Mercado de Compra
+                                </div>
                                 {getQualityBadge(data.buy_analysis.quality_metrics.quality_score)}
                             </CardTitle>
-                            <CardDescription className="text-muted-foreground">Análisis estadístico de órdenes de compra</CardDescription>
+                            <CardDescription className="text-muted-foreground">
+                                Análisis estadístico completo de órdenes de compra
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Key Statistics */}
-                            <div>
-                                <h4 className="font-semibold mb-2 text-foreground">Estadísticas de Precio</h4>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span>Media:</span>
-                                        <span className="font-semibold">{formatNumber(data.buy_analysis.cleaned_statistics.mean, 4)}</span>
+                        <CardContent className="space-y-6">
+                            {/* Precio Principal */}
+                            <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                <div className="text-2xl font-bold text-green-700 dark:text-green-400">
+                                    {formatNumber(data.buy_analysis.cleaned_statistics.mean, 4)} {data.fiat}
+                                </div>
+                                <div className="text-sm text-green-600 dark:text-green-500">Precio Promedio de Compra</div>
+                            </div>
+
+                            {/* Estadísticas Básicas */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">📊 Estadísticas de Precio</h4>
+                                <div className="grid grid-cols-4 gap-2">
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Mediana</div>
+                                        <div className="font-semibold text-foreground">{formatNumber(data.buy_analysis.cleaned_statistics.median, 4)}</div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Mediana:</span>
-                                        <span className="font-semibold">{formatNumber(data.buy_analysis.cleaned_statistics.median, 4)}</span>
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Desv. Estándar</div>
+                                        <div className="font-semibold text-foreground">{formatNumber(data.buy_analysis.cleaned_statistics.standard_deviation, 4)}</div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Desv. Est.:</span>
-                                        <span className="font-semibold">{formatNumber(data.buy_analysis.cleaned_statistics.standard_deviation, 4)}</span>
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Coef. Variación</div>
+                                        <div className="font-semibold text-foreground">{formatPercentage(data.buy_analysis.cleaned_statistics.coefficient_of_variation)}</div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>CV:</span>
-                                        <span className="font-semibold">{formatPercentage(data.buy_analysis.cleaned_statistics.coefficient_of_variation)}</span>
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Rango</div>
+                                        <div className="font-semibold text-foreground">{formatNumber(data.buy_analysis.cleaned_statistics.range, 4)}</div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Weighted Averages */}
-                            <div>
-                                <h4 className="font-semibold mb-2 text-foreground">Promedios Ponderados</h4>
-                                <div className="grid grid-cols-1 gap-1 text-sm">
-                                    <div className="flex justify-between">
-                                        <span>Volumen:</span>
-                                        <span className="font-semibold">{formatNumber(data.buy_analysis.weighted_averages.volume_weighted, 4)}</span>
+                            {/* Promedios Ponderados */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">⚖️ Promedios Ponderados</h4>
+                                <div className="space-y-2 grid grid-cols-3 gap-3">
+                                    <div className="flex flex-col gap-0 justify-between items-center p-2 bg-muted/40 rounded border-2 border-muted-foreground/15 shadow-sm">
+                                        <span className="text-sm text-muted-foreground">Por Volumen:</span>
+                                        <span className="font-semibold text-foreground">{formatNumber(data.buy_analysis.weighted_averages.volume_weighted, 4)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Confiabilidad:</span>
-                                        <span className="font-semibold">{formatNumber(data.buy_analysis.weighted_averages.reliability_weighted, 4)}</span>
+                                    <div className="flex flex-col gap-0 justify-between items-center p-2 bg-muted/40 rounded border-2 border-muted-foreground/15 shadow-sm">
+                                        <span className="text-sm text-muted-foreground">Por Confiabilidad:</span>
+                                        <span className="font-semibold text-foreground">{formatNumber(data.buy_analysis.weighted_averages.reliability_weighted, 4)}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-0 justify-between items-center p-2 bg-muted/40 rounded border-2 border-muted-foreground/15 shadow-sm">
+                                        <span className="text-sm text-muted-foreground">Por Cantidad:</span>
+                                        <span className="font-semibold text-foreground">{formatNumber(data.buy_analysis.weighted_averages.amount_weighted, 4)}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Confidence Interval */}
-                            <div>
-                                <h4 className="font-semibold mb-2">Intervalo de Confianza ({formatPercentage(data.buy_analysis.confidence_intervals.confidence_level * 100)})</h4>
-                                <div className="bg-muted/30 border border-border p-2 rounded text-center text-sm">
-                                    <div className="font-semibold text-foreground">
+                            {/* Intervalo de Confianza */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">🎯 Intervalo de Confianza ({formatPercentage(data.buy_analysis.confidence_intervals.confidence_level * 100)})</h4>
+                                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg text-center">
+                                    <div className="text-lg font-bold text-blue-700 dark:text-blue-400">
                                         {formatNumber(data.buy_analysis.confidence_intervals.lower_bound, 4)} - {formatNumber(data.buy_analysis.confidence_intervals.upper_bound, 4)}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        ± {formatNumber(data.buy_analysis.confidence_intervals.margin_of_error, 4)}
+                                    <div className="text-sm text-blue-600 dark:text-blue-500 mt-1">
+                                        Margen de Error: ± {formatNumber(data.buy_analysis.confidence_intervals.margin_of_error, 4)}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Trend and Volatility */}
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <div className="text-sm text-muted-foreground">Tendencia</div>
-                                    {getTrendBadge(data.buy_analysis.trend_analysis.trend_direction)}
-                                </div>
-                                <div>
-                                    <div className="text-sm text-muted-foreground">Volatilidad</div>
-                                    <Badge variant="secondary">{data.buy_analysis.volatility_analysis.volatility_classification.replace('_', ' ')}</Badge>
+                            {/* Tendencia y Volatilidad */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">📈 Análisis de Tendencia</h4>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="text-center p-3 bg-muted/50 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-2">Tendencia</div>
+                                        {getTrendBadge(data.buy_analysis.trend_analysis.trend_direction)}
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            Fuerza: {data.buy_analysis.trend_analysis.trend_strength}
+                                        </div>
+                                    </div>
+                                    <div className="text-center p-3 bg-muted/50 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-2">Volatilidad</div>
+                                        <Badge variant="secondary">{data.buy_analysis.volatility_analysis.volatility_classification.replace('_', ' ')}</Badge>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            {formatPercentage(data.buy_analysis.volatility_analysis.relative_volatility)}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Outliers */}
-                            <div className="flex justify-between text-sm">
-                                <span>Valores Atípicos Eliminados:</span>
-                                <span className="font-semibold text-foreground">
-                                    {data.buy_analysis.outlier_analysis.outliers_detected} ({formatPercentage(data.buy_analysis.outlier_analysis.outlier_percentage)})
-                                </span>
+                            {/* Calidad de Datos */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">🔍 Calidad de Datos</h4>
+                                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm">Valores Atípicos Eliminados:</span>
+                                        <span className="font-semibold text-foreground">
+                                            {data.buy_analysis.outlier_analysis.outliers_detected} ({formatPercentage(data.buy_analysis.outlier_analysis.outlier_percentage)})
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm">Tasa de Retención:</span>
+                                        <span className="font-semibold text-foreground">
+                                            {formatPercentage(data.buy_analysis.quality_metrics.data_retention_rate)}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -497,106 +534,141 @@ export function ComprehensiveMarketAnalysis({
                 {/* Sell Market Analysis */}
                 {data.sell_analysis && (
                     <Card className="border-border bg-card">
-                        <CardHeader>
+                        <CardHeader className="pb-4">
                             <CardTitle className="text-foreground flex items-center justify-between">
-                                Análisis de Mercado de Venta
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    Análisis de Mercado de Venta
+                                </div>
                                 {getQualityBadge(data.sell_analysis.quality_metrics.quality_score)}
                             </CardTitle>
-                            <CardDescription className="text-muted-foreground">Análisis estadístico de órdenes de venta</CardDescription>
+                            <CardDescription className="text-muted-foreground">
+                                Análisis estadístico completo de órdenes de venta
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Key Statistics */}
-                            <div>
-                                <h4 className="font-semibold mb-2 text-foreground">Estadísticas de Precio</h4>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span>Media:</span>
-                                        <span className="font-semibold">{formatNumber(data.sell_analysis.cleaned_statistics.mean, 4)}</span>
+                        <CardContent className="space-y-6">
+                            {/* Precio Principal */}
+                            <div className="text-center p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                <div className="text-2xl font-bold text-red-700 dark:text-red-400">
+                                    {formatNumber(data.sell_analysis.cleaned_statistics.mean, 4)} {data.fiat}
+                                </div>
+                                <div className="text-sm text-red-600 dark:text-red-500">Precio Promedio de Venta</div>
+                            </div>
+
+                            {/* Estadísticas Básicas */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">📊 Estadísticas de Precio</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Mediana</div>
+                                        <div className="font-semibold text-foreground">{formatNumber(data.sell_analysis.cleaned_statistics.median, 4)}</div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Mediana:</span>
-                                        <span className="font-semibold">{formatNumber(data.sell_analysis.cleaned_statistics.median, 4)}</span>
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Desv. Estándar</div>
+                                        <div className="font-semibold text-foreground">{formatNumber(data.sell_analysis.cleaned_statistics.standard_deviation, 4)}</div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Desv. Est.:</span>
-                                        <span className="font-semibold">{formatNumber(data.sell_analysis.cleaned_statistics.standard_deviation, 4)}</span>
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Coef. Variación</div>
+                                        <div className="font-semibold text-foreground">{formatPercentage(data.sell_analysis.cleaned_statistics.coefficient_of_variation)}</div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>CV:</span>
-                                        <span className="font-semibold">{formatPercentage(data.sell_analysis.cleaned_statistics.coefficient_of_variation)}</span>
+                                    <div className="bg-muted/50 p-3 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-1">Rango</div>
+                                        <div className="font-semibold text-foreground">{formatNumber(data.sell_analysis.cleaned_statistics.range, 4)}</div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Weighted Averages */}
-                            <div>
-                                <h4 className="font-semibold mb-2 text-foreground">Promedios Ponderados</h4>
-                                <div className="grid grid-cols-1 gap-1 text-sm">
-                                    <div className="flex justify-between">
-                                        <span>Volumen:</span>
-                                        <span className="font-semibold">{formatNumber(data.sell_analysis.weighted_averages.volume_weighted, 4)}</span>
+                            {/* Promedios Ponderados */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">⚖️ Promedios Ponderados</h4>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center p-2 bg-muted/40 rounded border-2 border-muted-foreground/15 shadow-sm">
+                                        <span className="text-sm text-muted-foreground">Por Volumen:</span>
+                                        <span className="font-semibold text-foreground">{formatNumber(data.sell_analysis.weighted_averages.volume_weighted, 4)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Confiabilidad:</span>
-                                        <span className="font-semibold">{formatNumber(data.sell_analysis.weighted_averages.reliability_weighted, 4)}</span>
+                                    <div className="flex justify-between items-center p-2 bg-muted/40 rounded border-2 border-muted-foreground/15 shadow-sm">
+                                        <span className="text-sm text-muted-foreground">Por Confiabilidad:</span>
+                                        <span className="font-semibold text-foreground">{formatNumber(data.sell_analysis.weighted_averages.reliability_weighted, 4)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-2 bg-muted/40 rounded border-2 border-muted-foreground/15 shadow-sm">
+                                        <span className="text-sm text-muted-foreground">Por Cantidad:</span>
+                                        <span className="font-semibold text-foreground">{formatNumber(data.sell_analysis.weighted_averages.amount_weighted, 4)}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Confidence Interval */}
-                            <div>
-                                <h4 className="font-semibold mb-2">Confidence Interval ({formatPercentage(data.sell_analysis.confidence_intervals.confidence_level * 100)})</h4>
-                                <div className="bg-muted/30 border border-border p-2 rounded text-center text-sm">
-                                    <div className="font-semibold text-foreground">
+                            {/* Intervalo de Confianza */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">🎯 Intervalo de Confianza ({formatPercentage(data.sell_analysis.confidence_intervals.confidence_level * 100)})</h4>
+                                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg text-center">
+                                    <div className="text-lg font-bold text-blue-700 dark:text-blue-400">
                                         {formatNumber(data.sell_analysis.confidence_intervals.lower_bound, 4)} - {formatNumber(data.sell_analysis.confidence_intervals.upper_bound, 4)}
                                     </div>
-                                    <div className="text-xs text-foreground">
-                                        ± {formatNumber(data.sell_analysis.confidence_intervals.margin_of_error, 4)}
+                                    <div className="text-sm text-blue-600 dark:text-blue-500 mt-1">
+                                        Margen de Error: ± {formatNumber(data.sell_analysis.confidence_intervals.margin_of_error, 4)}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Trend and Volatility */}
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <div className="text-sm text-muted-foreground">Tendencia</div>
-                                    {getTrendBadge(data.sell_analysis.trend_analysis.trend_direction)}
-                                </div>
-                                <div>
-                                    <div className="text-sm text-muted-foreground">Volatilidad</div>
-                                    <Badge variant="secondary">{data.sell_analysis.volatility_analysis.volatility_classification.replace('_', ' ')}</Badge>
+                            {/* Tendencia y Volatilidad */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">📈 Análisis de Tendencia</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="text-center p-3 bg-muted/50 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-2">Tendencia</div>
+                                        {getTrendBadge(data.sell_analysis.trend_analysis.trend_direction)}
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            Fuerza: {data.sell_analysis.trend_analysis.trend_strength}
+                                        </div>
+                                    </div>
+                                    <div className="text-center p-3 bg-muted/50 rounded-lg border-2 border-muted-foreground/20 shadow-sm">
+                                        <div className="text-xs text-muted-foreground mb-2">Volatilidad</div>
+                                        <Badge variant="secondary">{data.sell_analysis.volatility_analysis.volatility_classification.replace('_', ' ')}</Badge>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            {formatPercentage(data.sell_analysis.volatility_analysis.relative_volatility)}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Outliers */}
-                            <div className="flex justify-between text-sm">
-                                <span>Valores Atípicos Eliminados:</span>
-                                <span className="font-semibold text-foreground">
-                                    {data.sell_analysis.outlier_analysis.outliers_detected} ({formatPercentage(data.sell_analysis.outlier_analysis.outlier_percentage)})
-                                </span>
+                            {/* Calidad de Datos */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-foreground border-b border-border pb-1">🔍 Calidad de Datos</h4>
+                                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm">Valores Atípicos Eliminados:</span>
+                                        <span className="font-semibold text-foreground">
+                                            {data.sell_analysis.outlier_analysis.outliers_detected} ({formatPercentage(data.sell_analysis.outlier_analysis.outlier_percentage)})
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm">Tasa de Retención:</span>
+                                        <span className="font-semibold text-foreground">
+                                            {formatPercentage(data.sell_analysis.quality_metrics.data_retention_rate)}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 )}
-            
-
-                {/* Percentile Comparison */}
-                {data.buy_analysis && data.sell_analysis && (
+                 {/* Percentile Comparison */}
+            {data.buy_analysis && data.sell_analysis && (
                     <Card className="border-border bg-card">
                         <CardHeader>
-                            <CardTitle className="text-foreground">Comparación de Percentiles</CardTitle>
-                            <CardDescription className="text-muted-foreground">Comparación de distribución de precios entre percentiles</CardDescription>
+                            <CardTitle className="text-foreground">📊 Comparación de Percentiles</CardTitle>
+                            <CardDescription className="text-muted-foreground">Distribución de precios por percentiles entre mercados de compra y venta</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b border-border">
-                                            <th className="text-left p-2 text-foreground">Percentil</th>
-                                            <th className="text-right p-2 text-muted-foreground">Mercado Compra</th>
-                                            <th className="text-right p-2 text-muted-foreground">Mercado Venta</th>
-                                            <th className="text-right p-2 text-foreground">Diferencia</th>
-                                            <th className="text-right p-2 text-foreground">Diferencia %</th>
+                                        <tr className="border-b-2 border-muted-foreground/20 bg-muted/50">
+                                            <th className="text-left p-3 text-foreground font-semibold">Percentil</th>
+                                            <th className="text-right p-3 text-green-700 dark:text-green-400 font-semibold">Mercado Compra</th>
+                                            <th className="text-right p-3 text-red-700 dark:text-red-400 font-semibold">Mercado Venta</th>
+                                            <th className="text-right p-3 text-foreground font-semibold">Diferencia</th>
+                                            <th className="text-right p-3 text-foreground font-semibold">Diferencia %</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -607,12 +679,16 @@ export function ComprehensiveMarketAnalysis({
                                             const diffPercent = buyValue > 0 ? (diff / buyValue) * 100 : 0;
                                             
                                             return (
-                                                <tr key={percentile} className="border-b border-border">
-                                                    <td className="p-2 font-medium text-foreground">{percentile}</td>
-                                                    <td className="p-2 text-right text-muted-foreground">{formatNumber(buyValue, 4)}</td>
-                                                    <td className="p-2 text-right text-muted-foreground">{formatNumber(sellValue, 4)}</td>
-                                                    <td className="p-2 text-right font-semibold text-foreground">{formatNumber(diff, 4)}</td>
-                                                    <td className="p-2 text-right text-foreground">{formatPercentage(diffPercent)}</td>
+                                                <tr key={percentile} className="border-b border-muted-foreground/15 hover:bg-muted/30">
+                                                    <td className="p-3 font-medium text-foreground">{percentile}</td>
+                                                    <td className="p-3 text-right text-green-700 dark:text-green-400 font-medium">{formatNumber(buyValue, 4)}</td>
+                                                    <td className="p-3 text-right text-red-700 dark:text-red-400 font-medium">{formatNumber(sellValue, 4)}</td>
+                                                    <td className="p-3 text-right font-semibold text-foreground">{formatNumber(diff, 4)}</td>
+                                                    <td className="p-3 text-right text-foreground">
+                                                        <Badge variant={diffPercent > 0 ? "destructive" : "default"}>
+                                                            {formatPercentage(diffPercent)}
+                                                        </Badge>
+                                                    </td>
                                                 </tr>
                                             );
                                         })}
@@ -621,9 +697,10 @@ export function ComprehensiveMarketAnalysis({
                             </div>
                         </CardContent>
                     </Card>
-                )}
-
+            )}
             </div>
+
+           
 
             {/* Historical Price Chart */}
             <Card className="border-border bg-card">
