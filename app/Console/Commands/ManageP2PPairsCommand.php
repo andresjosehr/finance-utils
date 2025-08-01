@@ -38,7 +38,8 @@ class ManageP2PPairsCommand extends Command
             return self::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ Error: ' . $e->getMessage());
+            $this->error('❌ Error: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -52,6 +53,7 @@ class ManageP2PPairsCommand extends Command
 
         if ($this->option('json')) {
             $this->line(json_encode($pairs->toArray(), JSON_PRETTY_PRINT));
+
             return;
         }
 
@@ -60,6 +62,7 @@ class ManageP2PPairsCommand extends Command
 
         if ($pairs->isEmpty()) {
             $this->warn('No trading pairs configured');
+
             return;
         }
 
@@ -71,10 +74,10 @@ class ManageP2PPairsCommand extends Command
                 $pair->id,
                 $pair->pair_symbol,
                 $pair->is_active ? '✅' : '❌',
-                $pair->collection_interval_minutes . 'm',
+                $pair->collection_interval_minutes.'m',
                 $pair->min_trade_amount ?? '-',
                 $pair->max_trade_amount ?? '-',
-                $pair->created_at->format('Y-m-d H:i')
+                $pair->created_at->format('Y-m-d H:i'),
             ];
         }
 
@@ -91,8 +94,9 @@ class ManageP2PPairsCommand extends Command
         $asset = $this->option('asset');
         $fiat = $this->option('fiat');
 
-        if (!$asset || !$fiat) {
+        if (! $asset || ! $fiat) {
             $this->error('❌ Both --asset and --fiat options are required');
+
             return;
         }
 
@@ -103,6 +107,7 @@ class ManageP2PPairsCommand extends Command
         // Check if pair already exists
         if (TradingPair::where('pair_symbol', $pairSymbol)->exists()) {
             $this->error("❌ Trading pair {$pairSymbol} already exists");
+
             return;
         }
 
@@ -124,8 +129,12 @@ class ManageP2PPairsCommand extends Command
 
         $this->info("✅ Added trading pair: {$pairSymbol} (ID: {$pair->id})");
         $this->line("   Interval: {$interval} minutes");
-        if ($minAmount) $this->line("   Min amount: {$minAmount}");
-        if ($maxAmount) $this->line("   Max amount: {$maxAmount}");
+        if ($minAmount) {
+            $this->line("   Min amount: {$minAmount}");
+        }
+        if ($maxAmount) {
+            $this->line("   Max amount: {$maxAmount}");
+        }
     }
 
     /**
@@ -134,15 +143,18 @@ class ManageP2PPairsCommand extends Command
     private function removePair(): void
     {
         $pair = $this->findPair();
-        if (!$pair) return;
+        if (! $pair) {
+            return;
+        }
 
         $snapshotsCount = $pair->marketSnapshots()->count();
-        
+
         if ($snapshotsCount > 0) {
             $this->warn("⚠️  This pair has {$snapshotsCount} snapshots that will also be deleted");
-            
-            if (!$this->confirm('Are you sure you want to continue?')) {
+
+            if (! $this->confirm('Are you sure you want to continue?')) {
                 $this->info('Operation cancelled');
+
                 return;
             }
         }
@@ -164,14 +176,18 @@ class ManageP2PPairsCommand extends Command
         if ($this->option('all')) {
             $count = TradingPair::where('is_active', false)->update(['is_active' => true]);
             $this->info("✅ Activated {$count} trading pair(s)");
+
             return;
         }
 
         $pair = $this->findPair();
-        if (!$pair) return;
+        if (! $pair) {
+            return;
+        }
 
         if ($pair->is_active) {
             $this->warn("⚠️  Trading pair {$pair->pair_symbol} is already active");
+
             return;
         }
 
@@ -187,14 +203,18 @@ class ManageP2PPairsCommand extends Command
         if ($this->option('all')) {
             $count = TradingPair::where('is_active', true)->update(['is_active' => false]);
             $this->info("✅ Deactivated {$count} trading pair(s)");
+
             return;
         }
 
         $pair = $this->findPair();
-        if (!$pair) return;
+        if (! $pair) {
+            return;
+        }
 
-        if (!$pair->is_active) {
+        if (! $pair->is_active) {
             $this->warn("⚠️  Trading pair {$pair->pair_symbol} is already inactive");
+
             return;
         }
 
@@ -208,29 +228,32 @@ class ManageP2PPairsCommand extends Command
     private function updatePair(): void
     {
         $pair = $this->findPair();
-        if (!$pair) return;
+        if (! $pair) {
+            return;
+        }
 
         $updates = [];
-        
+
         if ($interval = $this->option('interval')) {
             $updates['collection_interval_minutes'] = (int) $interval;
         }
-        
+
         if ($minAmount = $this->option('min-amount')) {
             $updates['min_trade_amount'] = (float) $minAmount;
         }
-        
+
         if ($maxAmount = $this->option('max-amount')) {
             $updates['max_trade_amount'] = (float) $maxAmount;
         }
 
         if (empty($updates)) {
             $this->warn('⚠️  No updates specified. Use --interval, --min-amount, or --max-amount');
+
             return;
         }
 
         $pair->update($updates);
-        
+
         $this->info("✅ Updated trading pair: {$pair->pair_symbol}");
         foreach ($updates as $field => $value) {
             $this->line("   {$field}: {$value}");
@@ -244,42 +267,46 @@ class ManageP2PPairsCommand extends Command
     {
         if ($pairSymbol = $this->option('pair')) {
             $pair = TradingPair::where('pair_symbol', strtoupper($pairSymbol))->first();
-            
-            if (!$pair) {
+
+            if (! $pair) {
                 $this->error("❌ Trading pair not found: {$pairSymbol}");
+
                 return null;
             }
-            
+
             return $pair;
         }
 
         if ($asset = $this->option('asset')) {
             $query = TradingPair::where('asset', strtoupper($asset));
-            
+
             if ($fiat = $this->option('fiat')) {
                 $query->where('fiat', strtoupper($fiat));
             }
-            
+
             $pairs = $query->get();
-            
+
             if ($pairs->isEmpty()) {
                 $this->error('❌ No trading pairs found matching criteria');
+
                 return null;
             }
-            
+
             if ($pairs->count() > 1) {
                 $this->error('❌ Multiple pairs found. Please specify --pair option');
                 $this->line('Found pairs:');
                 foreach ($pairs as $p) {
                     $this->line("  - {$p->pair_symbol}");
                 }
+
                 return null;
             }
-            
+
             return $pairs->first();
         }
 
         $this->error('❌ Please specify --pair or --asset option');
+
         return null;
     }
 }

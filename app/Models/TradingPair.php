@@ -69,7 +69,7 @@ class TradingPair extends Model
      */
     public function isCollectionDue(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -77,7 +77,7 @@ class TradingPair extends Model
             ->orderBy('collected_at', 'desc')
             ->first();
 
-        if (!$latestSnapshot) {
+        if (! $latestSnapshot) {
             return true;
         }
 
@@ -85,9 +85,10 @@ class TradingPair extends Model
         if ($this->collection_interval_minutes == 1) {
             return true;
         }
-        
+
         // For longer intervals, check if enough time has passed
         $nextCollection = $latestSnapshot->collected_at->addMinutes($this->collection_interval_minutes);
+
         return now()->greaterThanOrEqualTo($nextCollection);
     }
 
@@ -103,7 +104,7 @@ class TradingPair extends Model
         return self::create([
             'asset' => strtoupper($asset),
             'fiat' => strtoupper($fiat),
-            'pair_symbol' => strtoupper($asset) . '/' . strtoupper($fiat),
+            'pair_symbol' => strtoupper($asset).'/'.strtoupper($fiat),
             'is_active' => true,
             'collection_interval_minutes' => $intervalMinutes,
             'collection_config' => $config,
@@ -117,7 +118,7 @@ class TradingPair extends Model
     {
         return self::where('is_active', true)
             ->get()
-            ->filter(fn($pair) => $pair->isCollectionDue());
+            ->filter(fn ($pair) => $pair->isCollectionDue());
     }
 
     /**
@@ -125,7 +126,7 @@ class TradingPair extends Model
      */
     public function timeUntilNextCollection(): ?int
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return null;
         }
 
@@ -133,13 +134,13 @@ class TradingPair extends Model
             ->orderBy('collected_at', 'desc')
             ->first();
 
-        if (!$latestSnapshot) {
+        if (! $latestSnapshot) {
             return 0; // Collection due immediately
         }
 
         $nextCollection = $latestSnapshot->collected_at->addMinutes($this->collection_interval_minutes);
         $secondsUntilNext = now()->diffInSeconds($nextCollection, false);
-        
+
         return max(0, (int) $secondsUntilNext);
     }
 
@@ -192,7 +193,7 @@ class TradingPair extends Model
      */
     public function getEffectiveVolumeRanges(): array
     {
-        if (!$this->use_volume_sampling || empty($this->volume_ranges)) {
+        if (! $this->use_volume_sampling || empty($this->volume_ranges)) {
             return [];
         }
 
@@ -212,7 +213,7 @@ class TradingPair extends Model
      */
     public function shouldUseVolumeSampling(): bool
     {
-        return $this->use_volume_sampling && !empty($this->volume_ranges);
+        return $this->use_volume_sampling && ! empty($this->volume_ranges);
     }
 
     /**
@@ -222,7 +223,7 @@ class TradingPair extends Model
     {
         $this->update([
             'use_volume_sampling' => true,
-            'volume_ranges' => $volumeRanges
+            'volume_ranges' => $volumeRanges,
         ]);
     }
 
@@ -233,7 +234,7 @@ class TradingPair extends Model
     {
         $this->update([
             'use_volume_sampling' => false,
-            'volume_ranges' => null
+            'volume_ranges' => null,
         ]);
     }
 }

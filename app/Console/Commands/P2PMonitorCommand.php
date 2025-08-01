@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\P2PMarketSnapshot;
 use App\Models\TradingPair;
-use App\Services\P2PDataCollectionService;
 use App\Services\BinanceP2PService;
+use App\Services\P2PDataCollectionService;
 use Illuminate\Console\Command;
 
 class P2PMonitorCommand extends Command
@@ -31,34 +31,46 @@ class P2PMonitorCommand extends Command
         try {
             $data = [];
 
-            if ($this->option('health') || !$this->hasAnyOption()) {
+            if ($this->option('health') || ! $this->hasAnyOption()) {
                 $data['health'] = $this->getHealthStatus($collectionService);
-                if (!$outputJson) $this->displayHealthStatus($data['health']);
+                if (! $outputJson) {
+                    $this->displayHealthStatus($data['health']);
+                }
             }
 
-            if ($this->option('pairs') || !$this->hasAnyOption()) {
+            if ($this->option('pairs') || ! $this->hasAnyOption()) {
                 $data['pairs'] = $this->getPairsStatus();
-                if (!$outputJson) $this->displayPairsStatus($data['pairs']);
+                if (! $outputJson) {
+                    $this->displayPairsStatus($data['pairs']);
+                }
             }
 
             if ($this->option('snapshots')) {
                 $data['snapshots'] = $this->getSnapshotsStatus($hours);
-                if (!$outputJson) $this->displaySnapshotsStatus($data['snapshots']);
+                if (! $outputJson) {
+                    $this->displaySnapshotsStatus($data['snapshots']);
+                }
             }
 
             if ($this->option('quality')) {
                 $data['quality'] = $this->getQualityAnalysis($hours);
-                if (!$outputJson) $this->displayQualityAnalysis($data['quality']);
+                if (! $outputJson) {
+                    $this->displayQualityAnalysis($data['quality']);
+                }
             }
 
             if ($this->option('api')) {
                 $data['api'] = $binanceService->getHealthStatus();
-                if (!$outputJson) $this->displayApiStatus($data['api']);
+                if (! $outputJson) {
+                    $this->displayApiStatus($data['api']);
+                }
             }
 
             // Statistics are always included
             $data['statistics'] = $collectionService->getCollectionStats($hours);
-            if (!$outputJson) $this->displayStatistics($data['statistics']);
+            if (! $outputJson) {
+                $this->displayStatistics($data['statistics']);
+            }
 
             if ($outputJson) {
                 $this->line(json_encode($data, JSON_PRETTY_PRINT));
@@ -67,7 +79,8 @@ class P2PMonitorCommand extends Command
             return self::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ Error: ' . $e->getMessage());
+            $this->error('❌ Error: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -77,8 +90,8 @@ class P2PMonitorCommand extends Command
      */
     private function hasAnyOption(): bool
     {
-        return !($this->option('health') || $this->option('pairs') || 
-                $this->option('snapshots') || $this->option('quality') || 
+        return ! ($this->option('health') || $this->option('pairs') ||
+                $this->option('snapshots') || $this->option('quality') ||
                 $this->option('api'));
     }
 
@@ -111,7 +124,7 @@ class P2PMonitorCommand extends Command
         $this->line("📊 Active trading pairs: {$health['active_pairs_count']}");
         $this->line("🕐 Last collection: {$health['last_collection_minutes_ago']} minutes ago");
         $this->line("📈 Recent collections: {$health['recent_collections_count']}");
-        $this->line("⭐ Average quality: " . number_format($health['average_quality_score'], 3));
+        $this->line('⭐ Average quality: '.number_format($health['average_quality_score'], 3));
         $this->newLine();
     }
 
@@ -126,17 +139,17 @@ class P2PMonitorCommand extends Command
 
         return $pairs->map(function ($pair) {
             $latestSnapshot = $pair->marketSnapshots->first();
-            
+
             return [
                 'id' => $pair->id,
                 'symbol' => $pair->pair_symbol,
                 'is_active' => $pair->is_active,
                 'interval_minutes' => $pair->collection_interval_minutes,
                 'last_collection' => $latestSnapshot?->collected_at,
-                'minutes_since_last' => $latestSnapshot ? 
+                'minutes_since_last' => $latestSnapshot ?
                     now()->diffInMinutes($latestSnapshot->collected_at) : null,
                 'is_collection_due' => $pair->isCollectionDue(),
-                'snapshots_count' => $pair->marketSnapshots()->count()
+                'snapshots_count' => $pair->marketSnapshots()->count(),
             ];
         })->toArray();
     }
@@ -156,12 +169,12 @@ class P2PMonitorCommand extends Command
             $rows[] = [
                 $pair['symbol'],
                 $pair['is_active'] ? '✅' : '❌',
-                $pair['interval_minutes'] . 'm',
-                $pair['last_collection'] ? 
-                    $pair['last_collection'] . ' (' . $pair['minutes_since_last'] . 'm ago)' : 
+                $pair['interval_minutes'].'m',
+                $pair['last_collection'] ?
+                    $pair['last_collection'].' ('.$pair['minutes_since_last'].'m ago)' :
                     'Never',
                 $pair['is_collection_due'] ? '🔴 Yes' : '🟢 No',
-                number_format($pair['snapshots_count'])
+                number_format($pair['snapshots_count']),
             ];
         }
 
@@ -187,7 +200,7 @@ class P2PMonitorCommand extends Command
                 'trade_type' => $snapshot->trade_type,
                 'collected_at' => $snapshot->collected_at,
                 'total_ads' => $snapshot->total_ads,
-                'quality_score' => $snapshot->data_quality_score
+                'quality_score' => $snapshot->data_quality_score,
             ];
         })->toArray();
     }
@@ -202,6 +215,7 @@ class P2PMonitorCommand extends Command
 
         if (empty($snapshots)) {
             $this->warn('No snapshots found');
+
             return;
         }
 
@@ -209,16 +223,16 @@ class P2PMonitorCommand extends Command
         $rows = [];
 
         foreach ($snapshots as $snapshot) {
-            $qualityIcon = $snapshot['quality_score'] >= 0.8 ? '🟢' : 
+            $qualityIcon = $snapshot['quality_score'] >= 0.8 ? '🟢' :
                           ($snapshot['quality_score'] >= 0.5 ? '🟡' : '🔴');
-            
+
             $rows[] = [
                 $snapshot['id'],
                 $snapshot['pair'],
                 $snapshot['trade_type'],
                 $snapshot['collected_at'],
                 $snapshot['total_ads'],
-                $qualityIcon . ' ' . number_format($snapshot['quality_score'], 3)
+                $qualityIcon.' '.number_format($snapshot['quality_score'], 3),
             ];
         }
 
@@ -245,13 +259,13 @@ class P2PMonitorCommand extends Command
             'BUY' => [
                 'count' => $snapshots->where('trade_type', 'BUY')->count(),
                 'avg_quality' => $snapshots->where('trade_type', 'BUY')->avg('data_quality_score'),
-                'avg_ads' => $snapshots->where('trade_type', 'BUY')->avg('total_ads')
+                'avg_ads' => $snapshots->where('trade_type', 'BUY')->avg('total_ads'),
             ],
             'SELL' => [
                 'count' => $snapshots->where('trade_type', 'SELL')->count(),
                 'avg_quality' => $snapshots->where('trade_type', 'SELL')->avg('data_quality_score'),
-                'avg_ads' => $snapshots->where('trade_type', 'SELL')->avg('total_ads')
-            ]
+                'avg_ads' => $snapshots->where('trade_type', 'SELL')->avg('total_ads'),
+            ],
         ];
 
         return [
@@ -259,7 +273,7 @@ class P2PMonitorCommand extends Command
             'quality_buckets' => $qualityBuckets,
             'by_trade_type' => $byTradeType,
             'overall_avg_quality' => $snapshots->avg('data_quality_score'),
-            'overall_avg_ads' => $snapshots->avg('total_ads')
+            'overall_avg_ads' => $snapshots->avg('total_ads'),
         ];
     }
 
@@ -272,8 +286,8 @@ class P2PMonitorCommand extends Command
         $this->line('─────────────────────');
 
         $this->line("Total snapshots: {$quality['total_snapshots']}");
-        $this->line("Overall avg quality: " . number_format($quality['overall_avg_quality'], 3));
-        $this->line("Overall avg ads: " . number_format($quality['overall_avg_ads'], 1));
+        $this->line('Overall avg quality: '.number_format($quality['overall_avg_quality'], 3));
+        $this->line('Overall avg ads: '.number_format($quality['overall_avg_ads'], 1));
         $this->newLine();
 
         $this->line('Quality Distribution:');
@@ -286,9 +300,9 @@ class P2PMonitorCommand extends Command
 
         $this->line('By Trade Type:');
         foreach ($quality['by_trade_type'] as $type => $stats) {
-            $this->line("  {$type}: {$stats['count']} snapshots, " . 
-                       "avg quality: " . number_format($stats['avg_quality'], 3) . ", " .
-                       "avg ads: " . number_format($stats['avg_ads'], 1));
+            $this->line("  {$type}: {$stats['count']} snapshots, ".
+                       'avg quality: '.number_format($stats['avg_quality'], 3).', '.
+                       'avg ads: '.number_format($stats['avg_ads'], 1));
         }
         $this->newLine();
     }
@@ -309,7 +323,7 @@ class P2PMonitorCommand extends Command
         $this->line("  Max attempts: {$rateLimit['max_attempts']}/minute");
         $this->line("  Remaining: {$rateLimit['remaining']}");
         $this->line("  Reset in: {$rateLimit['reset_in_seconds']} seconds");
-        $this->line("  Is limited: " . ($rateLimit['is_limited'] ? '🔴 Yes' : '🟢 No'));
+        $this->line('  Is limited: '.($rateLimit['is_limited'] ? '🔴 Yes' : '🟢 No'));
         $this->newLine();
 
         $retry = $api['retry_config'];
@@ -327,7 +341,7 @@ class P2PMonitorCommand extends Command
      */
     private function displayStatistics(array $stats): void
     {
-        $this->info('📈 Collection Statistics (Last ' . $stats['period_hours'] . ' hours)');
+        $this->info('📈 Collection Statistics (Last '.$stats['period_hours'].' hours)');
         $this->line('────────────────────────────────────');
 
         $this->line("Total snapshots: {$stats['total_snapshots']}");
@@ -340,11 +354,11 @@ class P2PMonitorCommand extends Command
         $this->line("Low quality: {$stats['by_quality']['low']}");
         $this->newLine();
 
-        $this->line("Average quality score: " . number_format($stats['average_quality_score'], 4));
-        $this->line("Total ads collected: " . number_format($stats['total_ads_collected']));
+        $this->line('Average quality score: '.number_format($stats['average_quality_score'], 4));
+        $this->line('Total ads collected: '.number_format($stats['total_ads_collected']));
         $this->line("Unique pairs: {$stats['unique_pairs']}");
         $this->line("Recent collections/hour: {$stats['recent_collections_per_hour']}");
-        $this->line("Quality trend: " . number_format($stats['quality_trend'], 4));
+        $this->line('Quality trend: '.number_format($stats['quality_trend'], 4));
         $this->newLine();
     }
 }

@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
-
 class P2PDataValidationService
 {
     private const MIN_ADS_COUNT = 1;
+
     private const MAX_PRICE_VARIATION = 0.5; // 50% variation allowed
+
     private const MIN_PRICE = 0.01;
+
     private const MAX_PRICE = 1000000;
 
     /**
@@ -21,19 +22,19 @@ class P2PDataValidationService
             'errors' => [],
             'warnings' => [],
             'quality_score' => 1.0,
-            'metrics' => []
+            'metrics' => [],
         ];
 
         // Check basic structure
         $structureValidation = $this->validateStructure($data);
-        if (!$structureValidation['is_valid']) {
+        if (! $structureValidation['is_valid']) {
             $result['is_valid'] = false;
             $result['errors'] = array_merge($result['errors'], $structureValidation['errors']);
             $result['quality_score'] *= 0.5;
         }
 
         // If structure is invalid, return early
-        if (!$result['is_valid']) {
+        if (! $result['is_valid']) {
             return $result;
         }
 
@@ -56,7 +57,7 @@ class P2PDataValidationService
         // Final quality assessment
         if ($result['quality_score'] < 0.3) {
             $result['is_valid'] = false;
-            $result['errors'][] = 'Data quality score too low: ' . round($result['quality_score'], 3);
+            $result['errors'][] = 'Data quality score too low: '.round($result['quality_score'], 3);
         }
 
         return $result;
@@ -70,12 +71,12 @@ class P2PDataValidationService
         $result = ['is_valid' => true, 'errors' => []];
 
         // Check required fields
-        if (!isset($data['code'])) {
+        if (! isset($data['code'])) {
             $result['is_valid'] = false;
             $result['errors'][] = 'Missing response code';
         }
 
-        if (!isset($data['data']) || !is_array($data['data'])) {
+        if (! isset($data['data']) || ! is_array($data['data'])) {
             $result['is_valid'] = false;
             $result['errors'][] = 'Missing or invalid data array';
         }
@@ -83,10 +84,10 @@ class P2PDataValidationService
         // Check response code
         if (isset($data['code']) && $data['code'] !== '000000') {
             $result['is_valid'] = false;
-            $result['errors'][] = 'API returned error code: ' . $data['code'];
-            
+            $result['errors'][] = 'API returned error code: '.$data['code'];
+
             if (isset($data['message'])) {
-                $result['errors'][] = 'API error message: ' . $data['message'];
+                $result['errors'][] = 'API error message: '.$data['message'];
             }
         }
 
@@ -106,28 +107,29 @@ class P2PDataValidationService
                 'total_ads' => count($ads),
                 'valid_ads' => 0,
                 'invalid_ads' => 0,
-                'incomplete_ads' => 0
-            ]
+                'incomplete_ads' => 0,
+            ],
         ];
 
         if (empty($ads)) {
             $result['errors'][] = 'No ads data available';
             $result['quality_multiplier'] = 0.0;
+
             return $result;
         }
 
         if (count($ads) < self::MIN_ADS_COUNT) {
-            $result['warnings'][] = 'Very few ads available: ' . count($ads);
+            $result['warnings'][] = 'Very few ads available: '.count($ads);
             $result['quality_multiplier'] *= 0.8;
         }
 
         foreach ($ads as $index => $ad) {
             $adValidation = $this->validateSingleAd($ad, $index);
-            
-            if (!empty($adValidation['errors'])) {
+
+            if (! empty($adValidation['errors'])) {
                 $result['metrics']['invalid_ads']++;
                 $result['errors'] = array_merge($result['errors'], $adValidation['errors']);
-            } elseif (!empty($adValidation['warnings'])) {
+            } elseif (! empty($adValidation['warnings'])) {
                 $result['metrics']['incomplete_ads']++;
                 $result['warnings'] = array_merge($result['warnings'], $adValidation['warnings']);
             } else {
@@ -139,7 +141,7 @@ class P2PDataValidationService
         $validRatio = $result['metrics']['valid_ads'] / $result['metrics']['total_ads'];
         if ($validRatio < 0.5) {
             $result['quality_multiplier'] *= 0.5;
-            $result['warnings'][] = 'Low valid ads ratio: ' . round($validRatio * 100, 1) . '%';
+            $result['warnings'][] = 'Low valid ads ratio: '.round($validRatio * 100, 1).'%';
         } elseif ($validRatio < 0.8) {
             $result['quality_multiplier'] *= 0.8;
         }
@@ -155,13 +157,15 @@ class P2PDataValidationService
         $result = ['errors' => [], 'warnings' => []];
 
         // Check required ad structure
-        if (!isset($ad['adv']) || !is_array($ad['adv'])) {
+        if (! isset($ad['adv']) || ! is_array($ad['adv'])) {
             $result['errors'][] = "Ad {$index}: Missing 'adv' data";
+
             return $result;
         }
 
-        if (!isset($ad['advertiser']) || !is_array($ad['advertiser'])) {
+        if (! isset($ad['advertiser']) || ! is_array($ad['advertiser'])) {
             $result['errors'][] = "Ad {$index}: Missing 'advertiser' data";
+
             return $result;
         }
 
@@ -169,7 +173,7 @@ class P2PDataValidationService
         $advertiser = $ad['advertiser'];
 
         // Validate price
-        if (!isset($adv['price']) || !is_numeric($adv['price'])) {
+        if (! isset($adv['price']) || ! is_numeric($adv['price'])) {
             $result['errors'][] = "Ad {$index}: Invalid or missing price";
         } else {
             $price = (float) $adv['price'];
@@ -179,7 +183,7 @@ class P2PDataValidationService
         }
 
         // Validate surplus amount (available volume)
-        if (!isset($adv['surplusAmount']) || !is_numeric($adv['surplusAmount'])) {
+        if (! isset($adv['surplusAmount']) || ! is_numeric($adv['surplusAmount'])) {
             $result['warnings'][] = "Ad {$index}: Invalid or missing surplus amount";
         } else {
             $amount = (float) $adv['surplusAmount'];
@@ -194,7 +198,7 @@ class P2PDataValidationService
         }
 
         // Validate trade methods
-        if (!isset($adv['tradeMethods']) || !is_array($adv['tradeMethods'])) {
+        if (! isset($adv['tradeMethods']) || ! is_array($adv['tradeMethods'])) {
             $result['warnings'][] = "Ad {$index}: Missing trade methods";
         } elseif (empty($adv['tradeMethods'])) {
             $result['warnings'][] = "Ad {$index}: No trade methods available";
@@ -204,7 +208,7 @@ class P2PDataValidationService
         if (isset($adv['minSingleTransAmount'], $adv['maxSingleTransAmount'])) {
             $minAmount = (float) $adv['minSingleTransAmount'];
             $maxAmount = (float) $adv['maxSingleTransAmount'];
-            
+
             if ($minAmount > $maxAmount) {
                 $result['warnings'][] = "Ad {$index}: Min amount greater than max amount";
             }
@@ -220,7 +224,7 @@ class P2PDataValidationService
     {
         $result = [
             'warnings' => [],
-            'quality_multiplier' => 1.0
+            'quality_multiplier' => 1.0,
         ];
 
         if (count($ads) < 2) {
@@ -246,9 +250,9 @@ class P2PDataValidationService
         // Check for extreme price variations
         if ($minPrice > 0) {
             $variation = ($maxPrice - $minPrice) / $minPrice;
-            
+
             if ($variation > self::MAX_PRICE_VARIATION) {
-                $result['warnings'][] = 'High price variation detected: ' . round($variation * 100, 1) . '%';
+                $result['warnings'][] = 'High price variation detected: '.round($variation * 100, 1).'%';
                 $result['quality_multiplier'] *= 0.8;
             }
         }
@@ -263,7 +267,7 @@ class P2PDataValidationService
         }
 
         if ($outliers > count($prices) * 0.1) { // More than 10% outliers
-            $result['warnings'][] = "Multiple price outliers detected: {$outliers} out of " . count($prices);
+            $result['warnings'][] = "Multiple price outliers detected: {$outliers} out of ".count($prices);
             $result['quality_multiplier'] *= 0.9;
         }
 
@@ -290,18 +294,18 @@ class P2PDataValidationService
         if (count($prices) >= 3) {
             $isAscending = true;
             $isDescending = true;
-            
+
             for ($i = 1; $i < count($prices); $i++) {
-                if ($prices[$i-1] > $prices[$i]) {
+                if ($prices[$i - 1] > $prices[$i]) {
                     $isAscending = false;
                 }
-                if ($prices[$i-1] < $prices[$i]) {
+                if ($prices[$i - 1] < $prices[$i]) {
                     $isDescending = false;
                 }
             }
 
             // Expect ascending order for both BUY and SELL (Binance sorts by best price first)
-            if (!$isAscending && !$isDescending) {
+            if (! $isAscending && ! $isDescending) {
                 $result['warnings'][] = "Prices not properly sorted for {$tradeType} orders";
             }
         }
@@ -329,9 +333,11 @@ class P2PDataValidationService
         $currentAdsCount = count($currentData['data']);
 
         // Compare with historical data if available
-        if (!empty($historicalData)) {
+        if (! empty($historicalData)) {
             foreach ($historicalData as $historical) {
-                if (empty($historical['data'])) continue;
+                if (empty($historical['data'])) {
+                    continue;
+                }
 
                 $historicalPrices = array_map(function ($ad) {
                     return (float) $ad['adv']['price'];
@@ -397,7 +403,7 @@ class P2PDataValidationService
     {
         sort($numbers);
         $count = count($numbers);
-        
+
         if ($count % 2 === 0) {
             return ($numbers[$count / 2 - 1] + $numbers[$count / 2]) / 2;
         } else {
@@ -413,12 +419,13 @@ class P2PDataValidationService
         sort($numbers);
         $count = count($numbers);
         $index = $quantile * ($count - 1);
-        
+
         if (floor($index) === $index) {
             return $numbers[intval($index)];
         } else {
             $lower = $numbers[intval(floor($index))];
             $upper = $numbers[intval(ceil($index))];
+
             return $lower + ($upper - $lower) * ($index - floor($index));
         }
     }
@@ -433,28 +440,28 @@ class P2PDataValidationService
             'validation_summary' => [
                 'valid' => 0,
                 'invalid' => 0,
-                'quality_scores' => []
+                'quality_scores' => [],
             ],
             'common_issues' => [],
-            'recommendations' => []
+            'recommendations' => [],
         ];
 
         $allIssues = [];
-        
+
         foreach ($snapshots as $snapshot) {
             $validation = $this->validateApiData(
                 $snapshot['raw_data'] ?? [],
                 $snapshot['trade_type'] ?? 'BUY'
             );
-            
+
             $report['validation_summary']['quality_scores'][] = $validation['quality_score'];
-            
+
             if ($validation['is_valid']) {
                 $report['validation_summary']['valid']++;
             } else {
                 $report['validation_summary']['invalid']++;
             }
-            
+
             // Collect all issues
             $allIssues = array_merge($allIssues, $validation['errors'], $validation['warnings']);
         }
@@ -465,7 +472,7 @@ class P2PDataValidationService
         $report['common_issues'] = array_slice($issueCounts, 0, 10, true);
 
         // Calculate statistics
-        if (!empty($report['validation_summary']['quality_scores'])) {
+        if (! empty($report['validation_summary']['quality_scores'])) {
             $scores = $report['validation_summary']['quality_scores'];
             $report['validation_summary']['average_quality'] = array_sum($scores) / count($scores);
             $report['validation_summary']['min_quality'] = min($scores);
@@ -476,7 +483,7 @@ class P2PDataValidationService
         if ($report['validation_summary']['average_quality'] < 0.7) {
             $report['recommendations'][] = 'Consider increasing API timeout or retry attempts';
         }
-        
+
         if ($report['validation_summary']['invalid'] > $report['validation_summary']['valid'] * 0.1) {
             $report['recommendations'][] = 'High number of invalid responses - check API parameters';
         }

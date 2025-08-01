@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class PriceHistory extends Model
 {
@@ -132,7 +130,7 @@ class PriceHistory extends Model
     public static function getPriceTrendAnalysis(int $tradingPairId, string $tradeType, int $hours = 24): array
     {
         $startTime = Carbon::now()->subHours($hours);
-        
+
         $priceHistory = self::forTradingPair($tradingPairId)
             ->forTradeType($tradeType)
             ->where('recorded_at', '>=', $startTime)
@@ -200,7 +198,7 @@ class PriceHistory extends Model
     public static function getOHLCVData(int $tradingPairId, string $tradeType, int $hours = 24, int $intervalMinutes = 60): array
     {
         $startTime = Carbon::now()->subHours($hours);
-        
+
         $query = self::forTradingPair($tradingPairId)
             ->forTradeType($tradeType)
             ->where('recorded_at', '>=', $startTime)
@@ -219,23 +217,23 @@ class PriceHistory extends Model
 
         foreach ($priceHistory as $entry) {
             $intervalTimestamp = $entry->recorded_at->floorMinutes($intervalMinutes);
-            
+
             if ($currentInterval !== $intervalTimestamp->timestamp) {
                 // Save previous interval if exists
-                if (!empty($intervalData)) {
+                if (! empty($intervalData)) {
                     $intervals[] = $this->calculateOHLCVForInterval($currentInterval, $intervalData);
                 }
-                
+
                 // Start new interval
                 $currentInterval = $intervalTimestamp->timestamp;
                 $intervalData = [];
             }
-            
+
             $intervalData[] = $entry;
         }
 
         // Don't forget the last interval
-        if (!empty($intervalData)) {
+        if (! empty($intervalData)) {
             $intervals[] = $this->calculateOHLCVForInterval($currentInterval, $intervalData);
         }
 
@@ -248,7 +246,7 @@ class PriceHistory extends Model
     public static function getSupportResistanceLevels(int $tradingPairId, string $tradeType, int $days = 7): array
     {
         $startTime = Carbon::now()->subDays($days);
-        
+
         $priceHistory = self::forTradingPair($tradingPairId)
             ->forTradeType($tradeType)
             ->where('recorded_at', '>=', $startTime)
@@ -274,7 +272,7 @@ class PriceHistory extends Model
         for ($i = $windowSize; $i < count($prices) - $windowSize; $i++) {
             $isLocalMin = true;
             $isLocalMax = true;
-            
+
             // Check if current price is local minimum or maximum
             for ($j = $i - $windowSize; $j <= $i + $windowSize; $j++) {
                 if ($j !== $i) {
@@ -286,7 +284,7 @@ class PriceHistory extends Model
                     }
                 }
             }
-            
+
             if ($isLocalMin) {
                 $supportLevels[] = [
                     'price' => $prices[$i],
@@ -294,7 +292,7 @@ class PriceHistory extends Model
                     'strength' => $this->calculateLevelStrength($prices, $prices[$i], 0.5),
                 ];
             }
-            
+
             if ($isLocalMax) {
                 $resistanceLevels[] = [
                     'price' => $prices[$i],
@@ -308,7 +306,7 @@ class PriceHistory extends Model
         usort($supportLevels, function ($a, $b) {
             return $b['strength'] <=> $a['strength'];
         });
-        
+
         usort($resistanceLevels, function ($a, $b) {
             return $b['strength'] <=> $a['strength'];
         });
@@ -348,7 +346,7 @@ class PriceHistory extends Model
     public static function calculatePriceCorrelation(int $tradingPair1Id, int $tradingPair2Id, string $tradeType, int $hours = 24): float
     {
         $startTime = Carbon::now()->subHours($hours);
-        
+
         $prices1 = self::forTradingPair($tradingPair1Id)
             ->forTradeType($tradeType)
             ->where('recorded_at', '>=', $startTime)
@@ -369,14 +367,14 @@ class PriceHistory extends Model
 
         // Align timestamps and get common data points
         $commonTimestamps = array_intersect(array_keys($prices1), array_keys($prices2));
-        
+
         if (count($commonTimestamps) < 2) {
             return 0;
         }
 
         $alignedPrices1 = [];
         $alignedPrices2 = [];
-        
+
         foreach ($commonTimestamps as $timestamp) {
             $alignedPrices1[] = $prices1[$timestamp];
             $alignedPrices2[] = $prices2[$timestamp];
@@ -391,7 +389,7 @@ class PriceHistory extends Model
     public static function getLiquidityAnalysis(int $tradingPairId, int $hours = 24): array
     {
         $startTime = Carbon::now()->subHours($hours);
-        
+
         $priceHistory = self::forTradingPair($tradingPairId)
             ->where('recorded_at', '>=', $startTime)
             ->orderBy('recorded_at', 'asc')
@@ -410,15 +408,15 @@ class PriceHistory extends Model
         $volumes = $priceHistory->pluck('total_volume')->toArray();
         $spreads = $priceHistory->whereNotNull('price_spread_percentage')->pluck('price_spread_percentage')->toArray();
 
-        $avgLiquidityScore = !empty($liquidityScores) ? array_sum($liquidityScores) / count($liquidityScores) : null;
-        
+        $avgLiquidityScore = ! empty($liquidityScores) ? array_sum($liquidityScores) / count($liquidityScores) : null;
+
         // Calculate trends
         $liquidityTrend = 'stable';
         if (count($liquidityScores) > 1) {
             $firstScore = $liquidityScores[0];
             $lastScore = end($liquidityScores);
             $change = $firstScore > 0 ? (($lastScore - $firstScore) / $firstScore) * 100 : 0;
-            
+
             if ($change > 5) {
                 $liquidityTrend = 'improving';
             } elseif ($change < -5) {
@@ -447,7 +445,7 @@ class PriceHistory extends Model
             'volume_stability' => $volumeStability ? round($volumeStability, 2) : null,
             'spread_stability' => $spreadStability ? round($spreadStability, 2) : null,
             'avg_volume' => round(array_sum($volumes) / count($volumes), 2),
-            'avg_spread' => !empty($spreads) ? round(array_sum($spreads) / count($spreads), 2) : null,
+            'avg_spread' => ! empty($spreads) ? round(array_sum($spreads) / count($spreads), 2) : null,
             'data_points' => $priceHistory->count(),
         ];
     }
@@ -458,7 +456,7 @@ class PriceHistory extends Model
     public static function getMovingAverages(int $tradingPairId, string $tradeType, array $periods = [5, 10, 20, 50]): array
     {
         $maxPeriod = max($periods);
-        
+
         $priceHistory = self::forTradingPair($tradingPairId)
             ->forTradeType($tradeType)
             ->orderBy('recorded_at', 'desc')
@@ -483,7 +481,7 @@ class PriceHistory extends Model
         // Calculate current price position relative to moving averages
         $currentPrice = end($prices);
         $signals = [];
-        
+
         foreach ($movingAverages as $period => $ma) {
             if ($currentPrice > $ma) {
                 $signals[$period] = 'bullish';

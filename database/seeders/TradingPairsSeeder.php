@@ -25,8 +25,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 1,
                 'collection_config' => [
                     'rows' => 50,
-                    'priority' => 'high'
-                ]
+                    'priority' => 'high',
+                ],
             ],
             [
                 'asset' => 'BTC',
@@ -34,8 +34,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 10,
                 'collection_config' => [
                     'rows' => 30,
-                    'priority' => 'medium'
-                ]
+                    'priority' => 'medium',
+                ],
             ],
             [
                 'asset' => 'USDC',
@@ -43,8 +43,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 10,
                 'collection_config' => [
                     'rows' => 30,
-                    'priority' => 'medium'
-                ]
+                    'priority' => 'medium',
+                ],
             ],
             [
                 'asset' => 'FDUSD',
@@ -52,8 +52,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 10,
                 'collection_config' => [
                     'rows' => 30,
-                    'priority' => 'medium'
-                ]
+                    'priority' => 'medium',
+                ],
             ],
             [
                 'asset' => 'BNB',
@@ -61,8 +61,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
+                    'priority' => 'low',
+                ],
             ],
             [
                 'asset' => 'ETH',
@@ -70,8 +70,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
+                    'priority' => 'low',
+                ],
             ],
             [
                 'asset' => 'DOGE',
@@ -79,8 +79,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
+                    'priority' => 'low',
+                ],
             ],
             [
                 'asset' => 'ADA',
@@ -88,8 +88,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
+                    'priority' => 'low',
+                ],
             ],
             [
                 'asset' => 'XRP',
@@ -97,8 +97,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
+                    'priority' => 'low',
+                ],
             ],
             [
                 'asset' => 'WLD',
@@ -106,8 +106,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
+                    'priority' => 'low',
+                ],
             ],
             [
                 'asset' => 'TRUMP',
@@ -115,8 +115,8 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
+                    'priority' => 'low',
+                ],
             ],
             [
                 'asset' => 'SOL',
@@ -124,18 +124,18 @@ class TradingPairsSeeder extends Seeder
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
                     'rows' => 20,
-                    'priority' => 'low'
-                ]
-            ]
+                    'priority' => 'low',
+                ],
+            ],
         ];
 
         foreach ($pairs as $pairData) {
-            $pairSymbol = $pairData['asset'] . '/' . $pairData['fiat'];
-            
+            $pairSymbol = $pairData['asset'].'/'.$pairData['fiat'];
+
             TradingPair::updateOrCreate(
                 [
                     'asset' => $pairData['asset'],
-                    'fiat' => $pairData['fiat']
+                    'fiat' => $pairData['fiat'],
                 ],
                 [
                     'pair_symbol' => $pairSymbol,
@@ -151,6 +151,6 @@ class TradingPairsSeeder extends Seeder
         // Enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1');
 
-        $this->command->info('Created ' . count($pairs) . ' trading pairs');
+        $this->command->info('Created '.count($pairs).' trading pairs');
     }
 }

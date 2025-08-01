@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\TradingPair;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Validation\Rule;
 
 class TradingPairController extends Controller
 {
@@ -69,8 +68,8 @@ class TradingPairController extends Controller
         ]);
 
         // Generate pair symbol
-        $pairSymbol = strtoupper($validated['asset']) . '/' . strtoupper($validated['fiat']);
-        
+        $pairSymbol = strtoupper($validated['asset']).'/'.strtoupper($validated['fiat']);
+
         // Check if pair already exists
         if (TradingPair::where('pair_symbol', $pairSymbol)->exists()) {
             return back()->withErrors(['pair_symbol' => 'This trading pair already exists.']);
@@ -169,10 +168,10 @@ class TradingPairController extends Controller
         ]);
 
         // Generate new pair symbol
-        $newPairSymbol = strtoupper($validated['asset']) . '/' . strtoupper($validated['fiat']);
-        
+        $newPairSymbol = strtoupper($validated['asset']).'/'.strtoupper($validated['fiat']);
+
         // Check if changing to an existing pair symbol
-        if ($newPairSymbol !== $tradingPair->pair_symbol && 
+        if ($newPairSymbol !== $tradingPair->pair_symbol &&
             TradingPair::where('pair_symbol', $newPairSymbol)->exists()) {
             return back()->withErrors(['pair_symbol' => 'This trading pair already exists.']);
         }
@@ -194,10 +193,10 @@ class TradingPairController extends Controller
     {
         // Check if pair has data
         $snapshotCount = $tradingPair->marketSnapshots()->count();
-        
+
         if ($snapshotCount > 0) {
             return back()->withErrors([
-                'delete' => "Cannot delete trading pair with {$snapshotCount} market snapshots. Please clean up data first."
+                'delete' => "Cannot delete trading pair with {$snapshotCount} market snapshots. Please clean up data first.",
             ]);
         }
 
@@ -213,7 +212,7 @@ class TradingPairController extends Controller
     public function toggleActive(TradingPair $tradingPair)
     {
         $tradingPair->update([
-            'is_active' => !$tradingPair->is_active
+            'is_active' => ! $tradingPair->is_active,
         ]);
 
         $status = $tradingPair->is_active ? 'activated' : 'deactivated';
@@ -244,29 +243,29 @@ class TradingPairController extends Controller
             switch ($validated['action']) {
                 case 'enable':
                     $updates['use_volume_sampling'] = true;
-                    if (empty($pair->volume_ranges) && !empty($validated['volume_ranges'])) {
+                    if (empty($pair->volume_ranges) && ! empty($validated['volume_ranges'])) {
                         $updates['volume_ranges'] = $validated['volume_ranges'];
                     }
                     break;
-                
+
                 case 'disable':
                     $updates['use_volume_sampling'] = false;
                     break;
-                
+
                 case 'update_ranges':
-                    if (!empty($validated['volume_ranges'])) {
+                    if (! empty($validated['volume_ranges'])) {
                         $updates['volume_ranges'] = $validated['volume_ranges'];
                     }
                     break;
-                
+
                 case 'update_volume':
-                    if (!empty($validated['default_sample_volume'])) {
+                    if (! empty($validated['default_sample_volume'])) {
                         $updates['default_sample_volume'] = $validated['default_sample_volume'];
                     }
                     break;
             }
 
-            if (!empty($updates)) {
+            if (! empty($updates)) {
                 $pair->update($updates);
                 $updatedCount++;
             }
@@ -281,7 +280,7 @@ class TradingPairController extends Controller
     public function statistics()
     {
         $pairs = TradingPair::all();
-        
+
         $stats = [
             'total_pairs' => $pairs->count(),
             'active_pairs' => $pairs->where('is_active', true)->count(),

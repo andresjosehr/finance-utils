@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Models\PriceHistory;
 use App\Models\TradingPair;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Carbon\Carbon;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PriceHistory>
@@ -23,21 +22,21 @@ class PriceHistoryFactory extends Factory
     {
         $tradeType = $this->faker->randomElement(['BUY', 'SELL']);
         $basePrice = $this->faker->randomFloat(2, 35, 40); // USDT/VES typical range
-        
+
         // Generate realistic price variations
         $bestPrice = $basePrice + $this->faker->randomFloat(2, -2, 2);
         $worstPrice = $bestPrice + ($tradeType === 'BUY' ? -1 : 1) * $this->faker->randomFloat(2, 0.5, 3);
         $avgPrice = ($bestPrice + $worstPrice) / 2;
         $medianPrice = $avgPrice + $this->faker->randomFloat(2, -0.5, 0.5);
-        
+
         $totalVolume = $this->faker->randomFloat(2, 1000, 50000);
         $activeOrders = $this->faker->numberBetween(5, 50);
         $merchantCount = $this->faker->numberBetween(3, min(30, $activeOrders));
         $proMerchantCount = $this->faker->numberBetween(0, intval($merchantCount * 0.4));
-        
+
         $priceSpread = abs($worstPrice - $bestPrice);
         $priceSpreadPercentage = $bestPrice > 0 ? ($priceSpread / $bestPrice) * 100 : 0;
-        
+
         return [
             'trading_pair_id' => TradingPair::factory(),
             'recorded_at' => $this->faker->dateTimeBetween('-7 days', 'now'),
@@ -160,11 +159,11 @@ class PriceHistoryFactory extends Factory
         return $this->state(function (array $attributes) {
             $basePrice = $this->faker->randomFloat(2, 35, 40);
             $volatility = $this->faker->randomFloat(2, 3, 8); // High volatility
-            
+
             $bestPrice = $basePrice + $this->faker->randomFloat(2, -$volatility, $volatility);
             $worstPrice = $bestPrice + $this->faker->randomFloat(2, -$volatility, $volatility);
             $avgPrice = ($bestPrice + $worstPrice) / 2;
-            
+
             return [
                 'best_price' => $bestPrice,
                 'avg_price' => $avgPrice,
@@ -183,11 +182,11 @@ class PriceHistoryFactory extends Factory
         return $this->state(function (array $attributes) {
             $basePrice = $this->faker->randomFloat(2, 35, 40);
             $volatility = $this->faker->randomFloat(2, 0.1, 0.5); // Low volatility
-            
+
             $bestPrice = $basePrice + $this->faker->randomFloat(2, -$volatility, $volatility);
-            $worstPrice = $bestPrice + $this->faker->randomFloat(2, -$volatility/2, $volatility/2);
+            $worstPrice = $bestPrice + $this->faker->randomFloat(2, -$volatility / 2, $volatility / 2);
             $avgPrice = ($bestPrice + $worstPrice) / 2;
-            
+
             return [
                 'best_price' => $bestPrice,
                 'avg_price' => $avgPrice,

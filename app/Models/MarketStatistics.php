@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class MarketStatistics extends Model
 {
@@ -129,7 +128,7 @@ class MarketStatistics extends Model
     public function scopeBetweenDates(Builder $query, Carbon $startDate, Carbon $endDate): Builder
     {
         return $query->where('period_start', '>=', $startDate)
-                    ->where('period_end', '<=', $endDate);
+            ->where('period_end', '<=', $endDate);
     }
 
     /**
@@ -147,7 +146,7 @@ class MarketStatistics extends Model
     {
         return $query->where(function ($q) {
             $q->where('has_price_anomaly', true)
-              ->orWhere('has_volume_anomaly', true);
+                ->orWhere('has_volume_anomaly', true);
         });
     }
 
@@ -219,11 +218,12 @@ class MarketStatistics extends Model
 
         // Calculate market-wide statistics
         $statistics->calculateMarketMetrics($priceHistory, $buyData, $sellData);
-        
+
         // Detect anomalies
         $statistics->detectAnomalies($priceHistory);
 
         $statistics->save();
+
         return $statistics;
     }
 
@@ -318,6 +318,7 @@ class MarketStatistics extends Model
         }
 
         $avgLiquidityScore = $data->whereNotNull('liquidity_score')->avg('liquidity_score');
+
         return $avgLiquidityScore ?? 0;
     }
 
@@ -332,17 +333,17 @@ class MarketStatistics extends Model
 
         // Market efficiency based on price stability and spread consistency
         $spreads = $data->whereNotNull('price_spread_percentage')->pluck('price_spread_percentage')->toArray();
-        
+
         if (empty($spreads)) {
             return 1;
         }
 
         $avgSpread = array_sum($spreads) / count($spreads);
         $spreadStdDev = $this->calculateStandardDeviation($spreads);
-        
+
         // Lower spread variation = higher efficiency
         $efficiency = $avgSpread > 0 ? max(0, 1 - ($spreadStdDev / $avgSpread)) : 1;
-        
+
         return min(1, $efficiency);
     }
 
@@ -353,7 +354,7 @@ class MarketStatistics extends Model
     {
         $totalMerchants = $data->sum('merchant_count');
         $proMerchants = $data->sum('pro_merchant_count');
-        
+
         return $totalMerchants > 0 ? round(($proMerchants / $totalMerchants) * 100) : 0;
     }
 
@@ -368,7 +369,7 @@ class MarketStatistics extends Model
 
         $firstPrice = $data->first()->best_price;
         $lastPrice = $data->last()->best_price;
-        
+
         return $firstPrice > 0 ? (($lastPrice - $firstPrice) / $firstPrice) * 100 : 0;
     }
 
@@ -383,7 +384,7 @@ class MarketStatistics extends Model
 
         $firstVolume = $data->first()->total_volume;
         $lastVolume = $data->last()->total_volume;
-        
+
         return $firstVolume > 0 ? (($lastVolume - $firstVolume) / $firstVolume) * 100 : 0;
     }
 
@@ -421,7 +422,7 @@ class MarketStatistics extends Model
     {
         $expectedPoints = $this->getExpectedDataPoints();
         $actualPoints = $this->data_points_count;
-        
+
         return $expectedPoints > 0 ? min(1, $actualPoints / $expectedPoints) : 1;
     }
 
@@ -431,7 +432,7 @@ class MarketStatistics extends Model
     private function getExpectedDataPoints(): int
     {
         $duration = $this->period_start->diffInMinutes($this->period_end);
-        
+
         return match ($this->timeframe) {
             '5m' => 1, // One data point per 5-minute period
             '15m' => 3, // Expect 3 data points in 15 minutes
@@ -452,19 +453,19 @@ class MarketStatistics extends Model
 
         // Detect price anomalies (using z-score)
         $priceAnomalies = $this->detectPriceAnomalies($data);
-        if (!empty($priceAnomalies)) {
+        if (! empty($priceAnomalies)) {
             $this->has_price_anomaly = true;
             $anomalies['price'] = $priceAnomalies;
         }
 
         // Detect volume anomalies
         $volumeAnomalies = $this->detectVolumeAnomalies($data);
-        if (!empty($volumeAnomalies)) {
+        if (! empty($volumeAnomalies)) {
             $this->has_volume_anomaly = true;
             $anomalies['volume'] = $volumeAnomalies;
         }
 
-        if (!empty($anomalies)) {
+        if (! empty($anomalies)) {
             $this->anomaly_details = $anomalies;
         }
     }
@@ -475,14 +476,14 @@ class MarketStatistics extends Model
     private function detectPriceAnomalies(Collection $data, float $threshold = 3.0): array
     {
         $prices = $data->pluck('best_price')->toArray();
-        
+
         if (count($prices) < 3) {
             return [];
         }
 
         $mean = array_sum($prices) / count($prices);
         $stdDev = $this->calculateStandardDeviation($prices);
-        
+
         if ($stdDev == 0) {
             return [];
         }
@@ -509,14 +510,14 @@ class MarketStatistics extends Model
     private function detectVolumeAnomalies(Collection $data, float $threshold = 3.0): array
     {
         $volumes = $data->pluck('total_volume')->toArray();
-        
+
         if (count($volumes) < 3) {
             return [];
         }
 
         $mean = array_sum($volumes) / count($volumes);
         $stdDev = $this->calculateStandardDeviation($volumes);
-        
+
         if ($stdDev == 0) {
             return [];
         }
@@ -565,7 +566,7 @@ class MarketStatistics extends Model
             ->orderBy('period_end', 'desc')
             ->first();
 
-        if (!$previousPeriod) {
+        if (! $previousPeriod) {
             return [
                 'has_comparison' => false,
                 'message' => 'No previous period data available for comparison',

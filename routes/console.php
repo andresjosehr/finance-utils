@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\CollectP2PMarketDataJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -13,24 +12,24 @@ Artisan::command('inspire', function () {
 // Check every minute for pairs that need collection, but respect individual intervals
 Schedule::call(function () {
     $pairsNeedingCollection = \App\Models\TradingPair::needingCollection();
-    
+
     if ($pairsNeedingCollection->isEmpty()) {
         return; // No pairs need collection right now
     }
-    
+
     // Group pairs by collection interval to optimize job dispatching
     $pairsByInterval = $pairsNeedingCollection->groupBy('collection_interval_minutes');
-    
+
     foreach ($pairsByInterval as $intervalMinutes => $pairs) {
         foreach ($pairs as $pair) {
             \App\Jobs\CollectP2PMarketDataJob::dispatch($pair->id, false)
                 ->onQueue('p2p-data-collection');
         }
     }
-    
+
     \Illuminate\Support\Facades\Log::info('Dispatched P2P collection jobs', [
         'total_pairs' => $pairsNeedingCollection->count(),
-        'pairs_by_interval' => $pairsByInterval->map->count()->toArray()
+        'pairs_by_interval' => $pairsByInterval->map->count()->toArray(),
     ]);
 })
     ->everyMinute()
@@ -42,29 +41,29 @@ Schedule::call(function () {
 Schedule::call(function () {
     $collectionService = app(\App\Services\P2PDataCollectionService::class);
     $deletedCount = $collectionService->cleanupOldSnapshots(30); // Keep 30 days
-    
+
     if ($deletedCount > 0) {
         \Illuminate\Support\Facades\Log::info('Scheduled cleanup completed', [
-            'deleted_snapshots' => $deletedCount
+            'deleted_snapshots' => $deletedCount,
         ]);
     }
 })
     ->dailyAt('02:00')
     ->name('cleanup-old-snapshots')
     ->onOneServer();
-    // Note: runInBackground() cannot be used with closures
+// Note: runInBackground() cannot be used with closures
 
 // Schedule health check every hour
 Schedule::call(function () {
     $collectionService = app(\App\Services\P2PDataCollectionService::class);
     $health = $collectionService->getHealthStatus();
-    
-    if (!$health['is_healthy']) {
+
+    if (! $health['is_healthy']) {
         \Illuminate\Support\Facades\Log::warning('P2P system health check failed', [
             'issues' => $health['issues'],
-            'last_collection_minutes_ago' => $health['last_collection_minutes_ago']
+            'last_collection_minutes_ago' => $health['last_collection_minutes_ago'],
         ]);
-        
+
         // Could send notifications here
         // NotificationService::sendHealthAlert($health);
     }
@@ -72,4 +71,4 @@ Schedule::call(function () {
     ->hourly()
     ->name('p2p-health-check')
     ->onOneServer();
-    // Note: runInBackground() cannot be used with closures
+// Note: runInBackground() cannot be used with closures

@@ -4,6 +4,9 @@ use App\Http\Controllers\BinanceP2PController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('binance-p2p')->group(function () {
+    // Configuration endpoints
+    Route::get('trading-pairs', [BinanceP2PController::class, 'getAvailableTradingPairs']);
+
     // Basic P2P data endpoints
     Route::get('market-summary', [BinanceP2PController::class, 'getMarketSummary']);
     Route::get('buy-prices', [BinanceP2PController::class, 'getBuyPrices']);
@@ -11,7 +14,7 @@ Route::prefix('binance-p2p')->group(function () {
     Route::get('both-prices', [BinanceP2PController::class, 'getBothPrices']);
     Route::get('data', [BinanceP2PController::class, 'getP2PData']);
     Route::get('historical-prices', [BinanceP2PController::class, 'getHistoricalPrices']);
-    
+
     // Advanced statistical analysis endpoints
     Route::get('statistical-analysis', [BinanceP2PController::class, 'getStatisticalAnalysis']);
     Route::get('comprehensive-analysis', [BinanceP2PController::class, 'getComprehensiveAnalysis']);

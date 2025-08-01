@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 class MarketSummaryCache extends Model
 {
@@ -61,10 +60,10 @@ class MarketSummaryCache extends Model
     public function refreshCache(): void
     {
         $tradingPair = $this->tradingPair;
-        
+
         // Get latest market data
         $latestData = $tradingPair->getLatestMarketData();
-        
+
         if ($latestData) {
             $this->update([
                 'current_buy_price' => $latestData['buy']->getPriceStatistics()['best_price'] ?? null,
@@ -77,10 +76,10 @@ class MarketSummaryCache extends Model
 
         // Calculate 24h metrics
         $this->calculate24hMetrics();
-        
+
         // Calculate trends
         $this->calculateTrends();
-        
+
         // Calculate market health metrics
         $this->calculateMarketHealth();
     }
@@ -92,18 +91,18 @@ class MarketSummaryCache extends Model
     {
         $tradingPair = $this->tradingPair;
         $priceHistory24h = $tradingPair->recentPriceHistory(24)->get();
-        
+
         if ($priceHistory24h->isNotEmpty()) {
             $buyHistory = $priceHistory24h->where('trade_type', 'BUY');
             $sellHistory = $priceHistory24h->where('trade_type', 'SELL');
-            
+
             // Calculate 24h price change (using buy prices)
             if ($buyHistory->isNotEmpty()) {
                 $oldestPrice = $buyHistory->last()->best_price;
                 $newestPrice = $buyHistory->first()->best_price;
                 $priceChange = $newestPrice - $oldestPrice;
                 $priceChangePercentage = $oldestPrice > 0 ? ($priceChange / $oldestPrice) * 100 : 0;
-                
+
                 $this->update([
                     'price_change_24h' => $priceChange,
                     'price_change_24h_percentage' => $priceChangePercentage,
@@ -111,7 +110,7 @@ class MarketSummaryCache extends Model
                     'low_24h' => $buyHistory->min('best_price'),
                 ]);
             }
-            
+
             // Calculate 24h volume
             $totalVolume = $priceHistory24h->sum('total_volume');
             $this->update(['volume_24h' => $totalVolume]);
@@ -124,13 +123,13 @@ class MarketSummaryCache extends Model
     private function calculateTrends(): void
     {
         $tradingPair = $this->tradingPair;
-        
+
         $trends = [
             'trend_1h' => $this->calculateTrendForPeriod($tradingPair, 1),
             'trend_4h' => $this->calculateTrendForPeriod($tradingPair, 4),
             'trend_24h' => $this->calculateTrendForPeriod($tradingPair, 24),
         ];
-        
+
         $this->update($trends);
     }
 
@@ -140,15 +139,15 @@ class MarketSummaryCache extends Model
     private function calculateTrendForPeriod(TradingPair $tradingPair, int $hours): string
     {
         $trendData = $tradingPair->getPriceTrend($hours, 'BUY');
-        
+
         $changePercentage = $trendData['change_percentage'] ?? 0;
-        
+
         if ($changePercentage > 1) {
             return 'up';
         } elseif ($changePercentage < -1) {
             return 'down';
         }
-        
+
         return 'stable';
     }
 
@@ -159,13 +158,13 @@ class MarketSummaryCache extends Model
     {
         $tradingPair = $this->tradingPair;
         $liquidityMetrics = $tradingPair->getLiquidityMetrics(24);
-        
+
         // Get recent market statistics for efficiency score
         $recentStats = MarketStatistics::forTradingPair($this->trading_pair_id)
             ->recent(24)
             ->orderBy('period_start', 'desc')
             ->first();
-        
+
         $this->update([
             'avg_liquidity_score' => $liquidityMetrics['avg_liquidity_score'],
             'active_merchants_count' => $liquidityMetrics['active_periods'] ?? 0,
@@ -178,10 +177,10 @@ class MarketSummaryCache extends Model
      */
     public function needsRefresh(int $maxAgeMinutes = 5): bool
     {
-        if (!$this->last_updated) {
+        if (! $this->last_updated) {
             return true;
         }
-        
+
         return $this->last_updated->diffInMinutes(now()) >= $maxAgeMinutes;
     }
 

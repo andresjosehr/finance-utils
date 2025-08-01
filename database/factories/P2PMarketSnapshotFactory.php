@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Models\P2PMarketSnapshot;
 use App\Models\TradingPair;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Carbon\Carbon;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\P2PMarketSnapshot>
@@ -23,10 +22,10 @@ class P2PMarketSnapshotFactory extends Factory
     {
         $tradeType = $this->faker->randomElement(['BUY', 'SELL']);
         $totalAds = $this->faker->numberBetween(5, 50);
-        
+
         // Generate realistic raw data structure similar to Binance P2P API
         $rawData = $this->generateBinanceP2PData($tradeType, $totalAds);
-        
+
         return [
             'trading_pair_id' => TradingPair::factory(),
             'trade_type' => $tradeType,
@@ -53,10 +52,10 @@ class P2PMarketSnapshotFactory extends Factory
 
         for ($i = 0; $i < $totalAds; $i++) {
             // Price variation based on order depth
-            $priceVariation = $tradeType === 'BUY' 
+            $priceVariation = $tradeType === 'BUY'
                 ? $this->faker->randomFloat(2, -0.5, 0.2) // Buy prices decrease with depth
                 : $this->faker->randomFloat(2, -0.2, 0.5); // Sell prices increase with depth
-            
+
             $price = $basePrice + ($priceVariation * $i * 0.1);
             $quantity = $this->faker->randomFloat(2, 100, 5000);
 
@@ -80,7 +79,7 @@ class P2PMarketSnapshotFactory extends Factory
                     'nickName' => $this->faker->userName(),
                     'userType' => $this->faker->randomElement(['user', 'merchant']),
                     'userGrade' => $this->faker->numberBetween(0, 5),
-                    'orderCompletionRate' => $this->faker->numberBetween(85, 100) . '%',
+                    'orderCompletionRate' => $this->faker->numberBetween(85, 100).'%',
                     'monthOrderCount' => $this->faker->numberBetween(10, 500),
                     'monthFinishRate' => $this->faker->randomFloat(2, 0.85, 1.0),
                     'positiveRate' => $this->faker->randomFloat(2, 0.90, 1.0),
@@ -115,6 +114,7 @@ class P2PMarketSnapshotFactory extends Factory
         ];
 
         $methodCount = $this->faker->numberBetween(1, 3);
+
         return $this->faker->randomElements($allMethods, $methodCount);
     }
 

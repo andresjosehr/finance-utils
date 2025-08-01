@@ -6,7 +6,6 @@ use App\Jobs\CollectP2PMarketDataJob;
 use App\Models\TradingPair;
 use App\Services\P2PDataCollectionService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Queue;
 
 class CollectP2PDataCommand extends Command
 {
@@ -27,9 +26,10 @@ class CollectP2PDataCommand extends Command
         try {
             // Determine which pairs to collect
             $pairs = $this->getPairsToCollect();
-            
+
             if ($pairs->isEmpty()) {
                 $this->warn('⚠️  No trading pairs found matching the criteria');
+
                 return self::SUCCESS;
             }
 
@@ -47,10 +47,12 @@ class CollectP2PDataCommand extends Command
             }
 
             $this->info('✅ P2P data collection completed successfully!');
+
             return self::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ Error: ' . $e->getMessage());
+            $this->error('❌ Error: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -66,18 +68,19 @@ class CollectP2PDataCommand extends Command
             $query->where('pair_symbol', strtoupper($pairSymbol));
         } elseif ($asset = $this->option('asset')) {
             $query->where('asset', strtoupper($asset));
-            
+
             if ($fiat = $this->option('fiat')) {
                 $query->where('fiat', strtoupper($fiat));
             }
         } else {
             // Get all active pairs
             $query->where('is_active', true);
-            
-            if (!$this->option('force')) {
+
+            if (! $this->option('force')) {
                 // Only get pairs that need collection
                 $allPairs = $query->get();
-                return $allPairs->filter(fn($pair) => $pair->isCollectionDue());
+
+                return $allPairs->filter(fn ($pair) => $pair->isCollectionDue());
             }
         }
 
@@ -90,7 +93,7 @@ class CollectP2PDataCommand extends Command
     private function collectSynchronously(P2PDataCollectionService $collectionService, $pairs): void
     {
         $this->info('🔄 Running synchronous collection...');
-        
+
         $progressBar = $this->output->createProgressBar($pairs->count());
         $progressBar->start();
 
@@ -100,7 +103,7 @@ class CollectP2PDataCommand extends Command
         foreach ($pairs as $pair) {
             try {
                 $result = $collectionService->collectPairData($pair);
-                
+
                 if ($result['success']) {
                     $totalSuccess++;
                     $this->newLine();
@@ -110,19 +113,19 @@ class CollectP2PDataCommand extends Command
                     $this->newLine();
                     $this->error("❌ {$pair->pair_symbol}: {$result['error']}");
                 }
-                
+
             } catch (\Exception $e) {
                 $totalFailed++;
                 $this->newLine();
                 $this->error("❌ {$pair->pair_symbol}: {$e->getMessage()}");
             }
-            
+
             $progressBar->advance();
         }
 
         $progressBar->finish();
         $this->newLine(2);
-        
+
         $this->info("📈 Results: {$totalSuccess} successful, {$totalFailed} failed");
     }
 
@@ -132,14 +135,14 @@ class CollectP2PDataCommand extends Command
     private function dispatchJobs($pairs): void
     {
         $this->info('📤 Dispatching collection jobs...');
-        
+
         $queueName = $this->option('queue') ?: 'p2p-data-collection';
         $force = $this->option('force');
 
         foreach ($pairs as $pair) {
             CollectP2PMarketDataJob::dispatch($pair->id, $force)
                 ->onQueue($queueName);
-                
+
             $this->line("  ➤ Dispatched job for {$pair->pair_symbol}");
         }
 

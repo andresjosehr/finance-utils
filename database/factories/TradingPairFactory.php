@@ -21,7 +21,7 @@ class TradingPairFactory extends Factory
     {
         $asset = $this->faker->randomElement(['USDT', 'BTC', 'ETH', 'USDC', 'BUSD']);
         $fiat = $this->faker->randomElement(['VES', 'USD', 'EUR', 'COP', 'ARS', 'BRL']);
-        
+
         return [
             'asset' => $asset,
             'fiat' => $fiat,

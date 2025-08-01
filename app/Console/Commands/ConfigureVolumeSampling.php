@@ -24,12 +24,13 @@ class ConfigureVolumeSampling extends Command
         }
 
         $pairSymbol = $this->option('pair');
-        $pairs = $pairSymbol 
+        $pairs = $pairSymbol
             ? TradingPair::where('pair_symbol', $pairSymbol)->get()
             : TradingPair::all();
 
         if ($pairs->isEmpty()) {
-            $this->error($pairSymbol ? "Trading pair '{$pairSymbol}' not found." : "No trading pairs found.");
+            $this->error($pairSymbol ? "Trading pair '{$pairSymbol}' not found." : 'No trading pairs found.');
+
             return 1;
         }
 
@@ -40,11 +41,13 @@ class ConfigureVolumeSampling extends Command
 
         if ($enable && $disable) {
             $this->error('Cannot both enable and disable volume sampling.');
+
             return 1;
         }
 
-        if (!$enable && !$disable && !$rangesOption && !$defaultVolume) {
+        if (! $enable && ! $disable && ! $rangesOption && ! $defaultVolume) {
             $this->error('Please specify an action: --enable, --disable, --ranges, or --default-volume');
+
             return 1;
         }
 
@@ -53,6 +56,7 @@ class ConfigureVolumeSampling extends Command
         }
 
         $this->info('Volume sampling configuration updated successfully.');
+
         return 0;
     }
 
@@ -62,12 +66,12 @@ class ConfigureVolumeSampling extends Command
 
         if ($enable) {
             $updates['use_volume_sampling'] = true;
-            
+
             // Set default ranges if not specified
-            if (!$rangesOption && empty($pair->volume_ranges)) {
+            if (! $rangesOption && empty($pair->volume_ranges)) {
                 $updates['volume_ranges'] = [100, 500, 1000, 2500, 5000];
             }
-            
+
             $this->info("✓ Enabled volume sampling for {$pair->pair_symbol}");
         }
 
@@ -80,23 +84,25 @@ class ConfigureVolumeSampling extends Command
             $ranges = array_map('intval', array_filter(explode(',', $rangesOption)));
             if (empty($ranges)) {
                 $this->error("Invalid ranges format for {$pair->pair_symbol}. Use comma-separated numbers.");
+
                 return;
             }
             $updates['volume_ranges'] = $ranges;
-            $this->info("✓ Set volume ranges for {$pair->pair_symbol}: " . implode(', ', $ranges));
+            $this->info("✓ Set volume ranges for {$pair->pair_symbol}: ".implode(', ', $ranges));
         }
 
         if ($defaultVolume) {
             $volume = (float) $defaultVolume;
             if ($volume <= 0) {
                 $this->error("Invalid default volume for {$pair->pair_symbol}. Must be positive.");
+
                 return;
             }
             $updates['default_sample_volume'] = $volume;
             $this->info("✓ Set default sample volume for {$pair->pair_symbol}: {$volume}");
         }
 
-        if (!empty($updates)) {
+        if (! empty($updates)) {
             $pair->update($updates);
         }
     }
@@ -104,7 +110,7 @@ class ConfigureVolumeSampling extends Command
     private function listCurrentConfiguration()
     {
         $pairs = TradingPair::all();
-        
+
         $this->info('Current Volume Sampling Configuration:');
         $this->line('');
 
@@ -125,10 +131,10 @@ class ConfigureVolumeSampling extends Command
         // Show summary statistics
         $enabledCount = $pairs->where('use_volume_sampling', true)->count();
         $totalCount = $pairs->count();
-        
+
         $this->line('');
         $this->info("Summary: {$enabledCount}/{$totalCount} pairs have volume sampling enabled");
-        
+
         return 0;
     }
 }

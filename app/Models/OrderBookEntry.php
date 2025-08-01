@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 class OrderBookEntry extends Model
 {
@@ -151,7 +150,7 @@ class OrderBookEntry extends Model
             ->orderBy('collected_at', 'desc')
             ->first();
 
-        if (!$latestSnapshot) {
+        if (! $latestSnapshot) {
             return [
                 'depth' => [],
                 'total_volume' => 0,
@@ -217,10 +216,10 @@ class OrderBookEntry extends Model
     public static function getMerchantPerformanceAnalysis(string $merchantId, int $days = 30): array
     {
         $cutoffDate = Carbon::now()->subDays($days);
-        
+
         $entries = self::whereHas('marketSnapshot', function ($query) use ($cutoffDate) {
-                $query->where('collected_at', '>=', $cutoffDate);
-            })
+            $query->where('collected_at', '>=', $cutoffDate);
+        })
             ->where('merchant_id', $merchantId)
             ->with('marketSnapshot')
             ->get();
@@ -240,13 +239,13 @@ class OrderBookEntry extends Model
         $totalOrders = $entries->count();
         $totalVolume = $entries->sum('quantity');
         $avgPrice = $entries->avg('price');
-        
+
         // Calculate market share (simplified - based on volume)
         $totalMarketVolume = self::whereHas('marketSnapshot', function ($query) use ($cutoffDate) {
-                $query->where('collected_at', '>=', $cutoffDate);
-            })
+            $query->where('collected_at', '>=', $cutoffDate);
+        })
             ->sum('quantity');
-        
+
         $marketShare = $totalMarketVolume > 0 ? ($totalVolume / $totalMarketVolume) * 100 : 0;
 
         // Calculate activity frequency (unique days with orders)
@@ -257,26 +256,26 @@ class OrderBookEntry extends Model
         // Price competitiveness (how often this merchant has the best price)
         $bestPriceCount = 0;
         $snapshotGroups = $entries->groupBy('p2p_market_snapshot_id');
-        
+
         foreach ($snapshotGroups as $snapshotEntries) {
             $merchantPrice = $snapshotEntries->first()->price;
             $snapshot = $snapshotEntries->first()->marketSnapshot;
-            
+
             $allEntriesInSnapshot = self::where('p2p_market_snapshot_id', $snapshot->id)
                 ->where('side', $snapshotEntries->first()->side)
                 ->get();
-            
-            $bestPrice = $snapshot->trade_type === 'BUY' 
+
+            $bestPrice = $snapshot->trade_type === 'BUY'
                 ? $allEntriesInSnapshot->max('price')  // Highest buy price is best
                 : $allEntriesInSnapshot->min('price'); // Lowest sell price is best
-            
+
             if ($merchantPrice == $bestPrice) {
                 $bestPriceCount++;
             }
         }
 
-        $priceCompetitiveness = $snapshotGroups->count() > 0 
-            ? ($bestPriceCount / $snapshotGroups->count()) * 100 
+        $priceCompetitiveness = $snapshotGroups->count() > 0
+            ? ($bestPriceCount / $snapshotGroups->count()) * 100
             : 0;
 
         return [
@@ -301,11 +300,11 @@ class OrderBookEntry extends Model
     public static function getPaymentMethodAnalysis(int $tradingPairId, int $hours = 24): array
     {
         $cutoffTime = Carbon::now()->subHours($hours);
-        
+
         $entries = self::whereHas('marketSnapshot', function ($query) use ($tradingPairId, $cutoffTime) {
-                $query->where('trading_pair_id', $tradingPairId)
-                      ->where('collected_at', '>=', $cutoffTime);
-            })
+            $query->where('trading_pair_id', $tradingPairId)
+                ->where('collected_at', '>=', $cutoffTime);
+        })
             ->whereNotNull('payment_methods')
             ->get();
 
@@ -321,8 +320,8 @@ class OrderBookEntry extends Model
                 foreach ($entry->payment_methods as $method) {
                     $identifier = $method['identifier'] ?? 'unknown';
                     $name = $method['trade_method_name'] ?? $identifier;
-                    
-                    if (!isset($methodCounts[$identifier])) {
+
+                    if (! isset($methodCounts[$identifier])) {
                         $methodCounts[$identifier] = [
                             'identifier' => $identifier,
                             'name' => $name,
@@ -330,7 +329,7 @@ class OrderBookEntry extends Model
                             'volume' => 0,
                         ];
                     }
-                    
+
                     $methodCounts[$identifier]['count']++;
                     $methodCounts[$identifier]['volume'] += $volume;
                 }
@@ -373,7 +372,7 @@ class OrderBookEntry extends Model
             ->orderBy('collected_at', 'desc')
             ->first();
 
-        if (!$latestSnapshot) {
+        if (! $latestSnapshot) {
             return [
                 'total_volume' => 0,
                 'top_5_concentration' => 0,
@@ -441,7 +440,7 @@ class OrderBookEntry extends Model
      */
     public function getFormattedPaymentMethodsAttribute(): string
     {
-        if (!is_array($this->payment_methods) || empty($this->payment_methods)) {
+        if (! is_array($this->payment_methods) || empty($this->payment_methods)) {
             return 'N/A';
         }
 
@@ -475,11 +474,11 @@ class OrderBookEntry extends Model
             return false;
         }
 
-        if ($criteria['require_kyc'] && !$this->is_kyc_verified) {
+        if ($criteria['require_kyc'] && ! $this->is_kyc_verified) {
             return false;
         }
 
-        if ($criteria['require_pro_merchant'] && !$this->is_pro_merchant) {
+        if ($criteria['require_pro_merchant'] && ! $this->is_pro_merchant) {
             return false;
         }
 

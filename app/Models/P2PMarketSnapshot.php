@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
 
 class P2PMarketSnapshot extends Model
 {
@@ -155,8 +155,8 @@ class P2PMarketSnapshot extends Model
         // Check for missing critical fields
         $validOrders = 0;
         foreach ($this->raw_data['data'] as $order) {
-            if (isset($order['adv']['price']) && 
-                isset($order['adv']['surplusAmount']) && 
+            if (isset($order['adv']['price']) &&
+                isset($order['adv']['surplusAmount']) &&
                 isset($order['advertiser']['userNo'])) {
                 $validOrders++;
             }
@@ -208,11 +208,11 @@ class P2PMarketSnapshot extends Model
 
         $prices = [];
         $volumes = [];
-        
+
         foreach ($this->raw_data['data'] as $order) {
             $price = (float) ($order['adv']['price'] ?? 0);
             $volume = (float) ($order['adv']['surplusAmount'] ?? 0);
-            
+
             if ($price > 0) {
                 $prices[] = $price;
                 $volumes[] = $volume;
@@ -259,25 +259,25 @@ class P2PMarketSnapshot extends Model
         foreach ($this->raw_data['data'] as $order) {
             $advertiser = $order['advertiser'] ?? [];
             $userNo = $advertiser['userNo'] ?? null;
-            
-            if ($userNo && !in_array($userNo, $merchants)) {
+
+            if ($userNo && ! in_array($userNo, $merchants)) {
                 $merchants[] = $userNo;
-                
+
                 $completionRate = $this->parseCompletionRate($advertiser['orderCompletionRate'] ?? null);
                 if ($completionRate !== null) {
                     $completionRates[] = $completionRate;
                 }
-                
+
                 $payTime = $this->parseAvgTime($advertiser['avgPayTime'] ?? null);
                 if ($payTime !== null) {
                     $payTimes[] = $payTime;
                 }
-                
+
                 $releaseTime = $this->parseAvgTime($advertiser['avgReleaseTime'] ?? null);
                 if ($releaseTime !== null) {
                     $releaseTimes[] = $releaseTime;
                 }
-                
+
                 if (($advertiser['userType'] ?? '') === 'merchant') {
                     $proMerchantCount++;
                 }
@@ -287,9 +287,9 @@ class P2PMarketSnapshot extends Model
         return [
             'unique_merchants' => count($merchants),
             'pro_merchant_count' => $proMerchantCount,
-            'avg_completion_rate' => !empty($completionRates) ? array_sum($completionRates) / count($completionRates) : null,
-            'avg_pay_time' => !empty($payTimes) ? array_sum($payTimes) / count($payTimes) : null,
-            'avg_release_time' => !empty($releaseTimes) ? array_sum($releaseTimes) / count($releaseTimes) : null,
+            'avg_completion_rate' => ! empty($completionRates) ? array_sum($completionRates) / count($completionRates) : null,
+            'avg_pay_time' => ! empty($payTimes) ? array_sum($payTimes) / count($payTimes) : null,
+            'avg_release_time' => ! empty($releaseTimes) ? array_sum($releaseTimes) / count($releaseTimes) : null,
         ];
     }
 
@@ -318,7 +318,7 @@ class P2PMarketSnapshot extends Model
             'merchant_count' => $merchantStats['unique_merchants'] ?? 0,
             'pro_merchant_count' => $merchantStats['pro_merchant_count'] ?? 0,
             'price_spread' => $priceStats['price_spread'] ?? 0,
-            'price_spread_percentage' => $priceStats['best_price'] > 0 ? 
+            'price_spread_percentage' => $priceStats['best_price'] > 0 ?
                 (($priceStats['price_spread'] ?? 0) / $priceStats['best_price']) * 100 : 0,
             'avg_completion_rate' => $merchantStats['avg_completion_rate'],
             'avg_pay_time' => $merchantStats['avg_pay_time'],
@@ -334,7 +334,7 @@ class P2PMarketSnapshot extends Model
         if ($rate === null) {
             return null;
         }
-        
+
         // Remove percentage sign and convert to integer
         return (int) str_replace('%', '', $rate);
     }
@@ -344,21 +344,21 @@ class P2PMarketSnapshot extends Model
         if ($time === null) {
             return null;
         }
-        
+
         // Parse time strings like "1.5 min" or "30 sec"
         if (preg_match('/(\d+\.?\d*)\s*min/', $time, $matches)) {
             return (float) $matches[1];
         } elseif (preg_match('/(\d+\.?\d*)\s*sec/', $time, $matches)) {
             return (float) $matches[1] / 60; // Convert to minutes
         }
-        
+
         return null;
     }
 
     private function extractPaymentMethods(array $adv): array
     {
         $methods = [];
-        
+
         if (isset($adv['tradeMethods'])) {
             foreach ($adv['tradeMethods'] as $method) {
                 $methods[] = [
@@ -367,7 +367,7 @@ class P2PMarketSnapshot extends Model
                 ];
             }
         }
-        
+
         return $methods;
     }
 
@@ -392,7 +392,7 @@ class P2PMarketSnapshot extends Model
     {
         sort($values);
         $count = count($values);
-        
+
         if ($count % 2 === 0) {
             return ($values[$count / 2 - 1] + $values[$count / 2]) / 2;
         } else {
@@ -404,13 +404,13 @@ class P2PMarketSnapshot extends Model
     {
         $totalValue = 0;
         $totalVolume = 0;
-        
+
         for ($i = 0; $i < count($prices); $i++) {
             $value = $prices[$i] * ($volumes[$i] ?? 0);
             $totalValue += $value;
             $totalVolume += $volumes[$i] ?? 0;
         }
-        
+
         return $totalVolume > 0 ? $totalValue / $totalVolume : 0;
     }
 
@@ -474,7 +474,7 @@ class P2PMarketSnapshot extends Model
         }
 
         // Factor 2: Price spread (lower spread = better quality)
-        $prices = $ads->pluck('adv.price')->map(fn($p) => (float) $p);
+        $prices = $ads->pluck('adv.price')->map(fn ($p) => (float) $p);
         if ($prices->count() > 1) {
             $spread = ($prices->max() - $prices->min()) / $prices->avg();
             if ($spread > 0.1) { // 10% spread
@@ -492,7 +492,7 @@ class P2PMarketSnapshot extends Model
 
         // Factor 4: Completeness of ad data
         $incompleteAds = $ads->filter(function ($ad) {
-            return empty($ad['adv']['price']) || 
+            return empty($ad['adv']['price']) ||
                    empty($ad['adv']['surplusAmount']) ||
                    empty($ad['advertiser']['nickName']);
         })->count();
@@ -503,7 +503,7 @@ class P2PMarketSnapshot extends Model
 
         // Apply all factors
         $finalScore = $score + array_sum($factors);
-        
+
         return max(0.0, min(1.0, $finalScore));
     }
 
@@ -513,7 +513,7 @@ class P2PMarketSnapshot extends Model
     public function updateQualityScore(): void
     {
         $this->update([
-            'data_quality_score' => $this->calculateQualityScore()
+            'data_quality_score' => $this->calculateQualityScore(),
         ]);
     }
 
@@ -523,7 +523,7 @@ class P2PMarketSnapshot extends Model
     public function getPriceMetrics(): array
     {
         $stats = $this->getPriceStatistics();
-        
+
         // Ensure consistent field names for backwards compatibility
         return array_merge($stats, [
             'best' => $stats['best_price'],

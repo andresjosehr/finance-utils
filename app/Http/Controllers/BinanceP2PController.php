@@ -593,18 +593,18 @@ class BinanceP2PController extends Controller
     private function groupSnapshotsByInterval($snapshots, int $intervalMinutes): array
     {
         $grouped = [];
-        
+
         foreach ($snapshots as $snapshot) {
             $priceStats = $snapshot->getPriceStatistics();
-            
+
             // Round timestamp to nearest interval
             $timestamp = $snapshot->collected_at;
             $roundedMinutes = floor($timestamp->minute / $intervalMinutes) * $intervalMinutes;
             $intervalKey = $timestamp->startOfHour()->addMinutes($roundedMinutes)->toISOString();
-            
-            $key = $intervalKey . '_' . $snapshot->trade_type;
-            
-            if (!isset($grouped[$key])) {
+
+            $key = $intervalKey.'_'.$snapshot->trade_type;
+
+            if (! isset($grouped[$key])) {
                 $grouped[$key] = [
                     'timestamp' => $intervalKey,
                     'trade_type' => $snapshot->trade_type,
@@ -612,19 +612,21 @@ class BinanceP2PController extends Controller
                     'price_stats' => [],
                 ];
             }
-            
+
             $grouped[$key]['snapshots'][] = $snapshot;
             $grouped[$key]['price_stats'][] = $priceStats;
         }
-        
+
         // Calculate averages for each interval
         $result = [];
         foreach ($grouped as $key => $group) {
             $stats = $group['price_stats'];
             $snapshots = $group['snapshots'];
-            
-            if (empty($stats)) continue;
-            
+
+            if (empty($stats)) {
+                continue;
+            }
+
             $avgData = [
                 'trade_type' => $group['trade_type'],
                 'best_price' => collect($stats)->avg('best_price'),
@@ -637,20 +639,67 @@ class BinanceP2PController extends Controller
                 'price_spread' => collect($stats)->avg('price_spread'),
                 'data_quality_score' => collect($snapshots)->avg('data_quality_score'),
             ];
-            
+
             $result[] = [
                 'timestamp' => $group['timestamp'],
                 'avg_data' => $avgData,
                 'count' => count($snapshots),
             ];
         }
-        
+
         // Sort by timestamp
-        usort($result, function($a, $b) {
+        usort($result, function ($a, $b) {
             return strtotime($a['timestamp']) - strtotime($b['timestamp']);
         });
-        
+
         return $result;
+    }
+
+    /**
+     * Get available trading pairs from the database
+     */
+    public function getAvailableTradingPairs(): JsonResponse
+    {
+        try {
+            $tradingPairs = \App\Models\TradingPair::where('is_active', true)
+                ->select('asset', 'fiat', 'pair_symbol')
+                ->orderBy('asset')
+                ->orderBy('fiat')
+                ->get();
+
+            // Group by assets and fiats for easier filtering on frontend
+            $assets = $tradingPairs->pluck('asset')->unique()->sort()->values();
+            $fiats = $tradingPairs->pluck('fiat')->unique()->sort()->values();
+
+            // Create mapping for filtering
+            $assetFiatMapping = [];
+            $fiatAssetMapping = [];
+
+            foreach ($tradingPairs as $pair) {
+                if (! isset($assetFiatMapping[$pair->asset])) {
+                    $assetFiatMapping[$pair->asset] = [];
+                }
+                $assetFiatMapping[$pair->asset][] = $pair->fiat;
+
+                if (! isset($fiatAssetMapping[$pair->fiat])) {
+                    $fiatAssetMapping[$pair->fiat] = [];
+                }
+                $fiatAssetMapping[$pair->fiat][] = $pair->asset;
+            }
+
+            return response()->json([
+                'assets' => $assets,
+                'fiats' => $fiats,
+                'pairs' => $tradingPairs,
+                'asset_fiat_mapping' => $assetFiatMapping,
+                'fiat_asset_mapping' => $fiatAssetMapping,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to retrieve trading pairs',
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
     }
 
     /**

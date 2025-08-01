@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
-
 class StatisticalAnalysisService
 {
     /**
@@ -41,18 +38,18 @@ class StatisticalAnalysisService
     public function analyzeMarketData(array $marketData, array $options = []): array
     {
         $priceData = $this->extractPriceData($marketData);
-        
+
         if (empty($priceData)) {
             return $this->getEmptyAnalysis();
         }
 
         $outlierMethod = $options['outlier_method'] ?? $this->config['outlier_detection']['default_method'];
         $confidenceLevel = $options['confidence_level'] ?? $this->config['confidence_intervals']['default_level'];
-        
+
         // Detect and filter outliers
         $outliers = $this->detectOutliers($priceData, $outlierMethod);
         $cleanData = $this->filterOutliers($priceData, $outliers);
-        
+
         return [
             'raw_statistics' => $this->calculateBasicStatistics($priceData),
             'cleaned_statistics' => $this->calculateBasicStatistics($cleanData),
@@ -109,7 +106,7 @@ class StatisticalAnalysisService
         }
 
         $prices = array_column($priceData, 'price');
-        
+
         switch ($method) {
             case 'iqr':
                 return $this->detectOutliersIQR($prices);
@@ -130,28 +127,28 @@ class StatisticalAnalysisService
         $sorted = $prices;
         sort($sorted);
         $count = count($sorted);
-        
+
         if ($count < 4) {
             return []; // Need at least 4 data points for IQR
         }
 
         $q1Index = (int) floor($count * 0.25);
         $q3Index = (int) floor($count * 0.75);
-        
+
         $q1 = $sorted[$q1Index];
         $q3 = $sorted[$q3Index];
         $iqr = $q3 - $q1;
-        
+
         $lowerBound = $q1 - ($this->config['outlier_detection']['iqr_multiplier'] * $iqr);
         $upperBound = $q3 + ($this->config['outlier_detection']['iqr_multiplier'] * $iqr);
-        
+
         $outliers = [];
         foreach ($prices as $index => $price) {
             if ($price < $lowerBound || $price > $upperBound) {
                 $outliers[$index] = $price;
             }
         }
-        
+
         return $outliers;
     }
 
@@ -161,23 +158,23 @@ class StatisticalAnalysisService
     private function detectOutliersZScore(array $prices): array
     {
         $mean = array_sum($prices) / count($prices);
-        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $prices)) / count($prices);
+        $variance = array_sum(array_map(fn ($x) => pow($x - $mean, 2), $prices)) / count($prices);
         $stdDev = sqrt($variance);
-        
+
         if ($stdDev == 0) {
             return []; // No variation, no outliers
         }
-        
+
         $threshold = $this->config['outlier_detection']['zscore_threshold'];
         $outliers = [];
-        
+
         foreach ($prices as $index => $price) {
             $zScore = abs(($price - $mean) / $stdDev);
             if ($zScore > $threshold) {
                 $outliers[$index] = $price;
             }
         }
-        
+
         return $outliers;
     }
 
@@ -187,23 +184,23 @@ class StatisticalAnalysisService
     private function detectOutliersModifiedZScore(array $prices): array
     {
         $median = $this->calculateMedian($prices);
-        $deviations = array_map(fn($x) => abs($x - $median), $prices);
+        $deviations = array_map(fn ($x) => abs($x - $median), $prices);
         $mad = $this->calculateMedian($deviations); // Median Absolute Deviation
-        
+
         if ($mad == 0) {
             return []; // No variation, no outliers
         }
-        
+
         $threshold = $this->config['outlier_detection']['modified_zscore_threshold'];
         $outliers = [];
-        
+
         foreach ($prices as $index => $price) {
             $modifiedZScore = 0.6745 * abs($price - $median) / $mad;
             if ($modifiedZScore > $threshold) {
                 $outliers[$index] = $price;
             }
         }
-        
+
         return $outliers;
     }
 
@@ -213,7 +210,7 @@ class StatisticalAnalysisService
     private function filterOutliers(array $priceData, array $outliers): array
     {
         return array_values(array_filter($priceData, function ($item, $index) use ($outliers) {
-            return !isset($outliers[$index]);
+            return ! isset($outliers[$index]);
         }, ARRAY_FILTER_USE_BOTH));
     }
 
@@ -228,16 +225,16 @@ class StatisticalAnalysisService
 
         $prices = array_column($priceData, 'price');
         $count = count($prices);
-        
+
         $mean = array_sum($prices) / $count;
         $median = $this->calculateMedian($prices);
         $mode = $this->calculateMode($prices);
-        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $prices)) / $count;
+        $variance = array_sum(array_map(fn ($x) => pow($x - $mean, 2), $prices)) / $count;
         $stdDev = sqrt($variance);
         $min = min($prices);
         $max = max($prices);
         $range = $max - $min;
-        
+
         return [
             'count' => $count,
             'mean' => round($mean, 8),
@@ -260,7 +257,7 @@ class StatisticalAnalysisService
     private function calculateWeightedAverages(array $marketData): array
     {
         $priceData = $this->extractPriceData($marketData);
-        
+
         if (empty($priceData)) {
             return [];
         }
@@ -280,13 +277,13 @@ class StatisticalAnalysisService
     {
         $totalVolume = 0;
         $weightedSum = 0;
-        
+
         foreach ($priceData as $data) {
             $volume = $data['volume'] > 0 ? $data['volume'] : 1; // Use 1 as minimum weight
             $totalVolume += $volume;
             $weightedSum += $data['price'] * $volume;
         }
-        
+
         return $totalVolume > 0 ? round($weightedSum / $totalVolume, 8) : 0;
     }
 
@@ -297,13 +294,13 @@ class StatisticalAnalysisService
     {
         $totalTrades = 0;
         $weightedSum = 0;
-        
+
         foreach ($priceData as $data) {
             $trades = max($data['merchant_trades'], 1); // Minimum weight of 1
             $totalTrades += $trades;
             $weightedSum += $data['price'] * $trades;
         }
-        
+
         return $totalTrades > 0 ? round($weightedSum / $totalTrades, 8) : 0;
     }
 
@@ -314,13 +311,13 @@ class StatisticalAnalysisService
     {
         $totalWeight = 0;
         $weightedSum = 0;
-        
+
         foreach ($priceData as $data) {
             $weight = max($data['completion_rate'] / 100, 0.1); // Minimum weight of 0.1
             $totalWeight += $weight;
             $weightedSum += $data['price'] * $weight;
         }
-        
+
         return $totalWeight > 0 ? round($weightedSum / $totalWeight, 8) : 0;
     }
 
@@ -331,13 +328,13 @@ class StatisticalAnalysisService
     {
         $totalWeight = 0;
         $weightedSum = 0;
-        
+
         foreach ($priceData as $data) {
             $weight = max($data['max_amount'] - $data['min_amount'], 1); // Range as weight
             $totalWeight += $weight;
             $weightedSum += $data['price'] * $weight;
         }
-        
+
         return $totalWeight > 0 ? round($weightedSum / $totalWeight, 8) : 0;
     }
 
@@ -347,7 +344,7 @@ class StatisticalAnalysisService
     private function calculateTimeWeightedAverages(array $marketData): array
     {
         $priceData = $this->extractPriceData($marketData);
-        
+
         if (empty($priceData)) {
             return [];
         }
@@ -355,7 +352,7 @@ class StatisticalAnalysisService
         $currentTime = now()->timestamp;
         $decayFactor = $this->config['time_weighting']['decay_factor'];
         $maxAgeHours = $this->config['time_weighting']['max_age_hours'];
-        
+
         return [
             'exponential_weighted' => $this->calculateExponentialWeightedAverage($priceData, $currentTime, $decayFactor),
             'linear_decay_weighted' => $this->calculateLinearDecayWeightedAverage($priceData, $currentTime, $maxAgeHours),
@@ -370,14 +367,14 @@ class StatisticalAnalysisService
     {
         $totalWeight = 0;
         $weightedSum = 0;
-        
+
         foreach ($priceData as $data) {
             $ageHours = ($currentTime - $data['timestamp']) / 3600;
             $weight = exp(-$decayFactor * $ageHours);
             $totalWeight += $weight;
             $weightedSum += $data['price'] * $weight;
         }
-        
+
         return $totalWeight > 0 ? round($weightedSum / $totalWeight, 8) : 0;
     }
 
@@ -388,14 +385,14 @@ class StatisticalAnalysisService
     {
         $totalWeight = 0;
         $weightedSum = 0;
-        
+
         foreach ($priceData as $data) {
             $ageHours = ($currentTime - $data['timestamp']) / 3600;
             $weight = max(1 - ($ageHours / $maxAgeHours), 0.1); // Minimum weight of 0.1
             $totalWeight += $weight;
             $weightedSum += $data['price'] * $weight;
         }
-        
+
         return $totalWeight > 0 ? round($weightedSum / $totalWeight, 8) : 0;
     }
 
@@ -406,16 +403,16 @@ class StatisticalAnalysisService
     {
         $totalWeight = 0;
         $weightedSum = 0;
-        
+
         // Sort by timestamp, most recent first
-        usort($priceData, fn($a, $b) => $b['timestamp'] <=> $a['timestamp']);
-        
+        usort($priceData, fn ($a, $b) => $b['timestamp'] <=> $a['timestamp']);
+
         foreach ($priceData as $index => $data) {
             $weight = 1 / (1 + $index); // Higher weight for more recent data
             $totalWeight += $weight;
             $weightedSum += $data['price'] * $weight;
         }
-        
+
         return $totalWeight > 0 ? round($weightedSum / $totalWeight, 8) : 0;
     }
 
@@ -431,13 +428,13 @@ class StatisticalAnalysisService
         $prices = array_column($priceData, 'price');
         $count = count($prices);
         $mean = array_sum($prices) / $count;
-        $stdDev = sqrt(array_sum(array_map(fn($x) => pow($x - $mean, 2), $prices)) / ($count - 1));
-        
+        $stdDev = sqrt(array_sum(array_map(fn ($x) => pow($x - $mean, 2), $prices)) / ($count - 1));
+
         // For large samples (n > 30), use normal distribution
         // For small samples, this is an approximation (should use t-distribution)
         $zScore = $this->getZScoreForConfidenceLevel($confidenceLevel);
         $marginOfError = $zScore * ($stdDev / sqrt($count));
-        
+
         return [
             'confidence_level' => $confidenceLevel,
             'mean' => round($mean, 8),
@@ -460,14 +457,14 @@ class StatisticalAnalysisService
 
         $prices = array_column($priceData, 'price');
         sort($prices);
-        
+
         $percentiles = [5, 10, 25, 50, 75, 90, 95];
         $result = [];
-        
+
         foreach ($percentiles as $p) {
             $result["P{$p}"] = round($this->calculatePercentile($prices, $p), 8);
         }
-        
+
         return $result;
     }
 
@@ -482,33 +479,33 @@ class StatisticalAnalysisService
 
         $prices = array_column($priceData, 'price');
         $count = count($prices);
-        
+
         // Calculate linear regression slope
         $xSum = array_sum(range(0, $count - 1));
         $ySum = array_sum($prices);
         $xySum = 0;
         $x2Sum = 0;
-        
+
         for ($i = 0; $i < $count; $i++) {
             $xySum += $i * $prices[$i];
             $x2Sum += $i * $i;
         }
-        
+
         $slope = ($count * $xySum - $xSum * $ySum) / ($count * $x2Sum - $xSum * $xSum);
         $intercept = ($ySum - $slope * $xSum) / $count;
-        
+
         // Calculate R-squared
         $yMean = $ySum / $count;
-        $ssTotal = array_sum(array_map(fn($y) => pow($y - $yMean, 2), $prices));
+        $ssTotal = array_sum(array_map(fn ($y) => pow($y - $yMean, 2), $prices));
         $ssRes = 0;
-        
+
         for ($i = 0; $i < $count; $i++) {
             $predicted = $slope * $i + $intercept;
             $ssRes += pow($prices[$i] - $predicted, 2);
         }
-        
+
         $rSquared = $ssTotal > 0 ? 1 - ($ssRes / $ssTotal) : 0;
-        
+
         return [
             'slope' => round($slope, 8),
             'intercept' => round($intercept, 8),
@@ -530,28 +527,28 @@ class StatisticalAnalysisService
 
         $prices = array_column($priceData, 'price');
         $count = count($prices);
-        
+
         if ($count < 2) {
             return ['volatility' => 0];
         }
 
         $mean = array_sum($prices) / $count;
-        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $prices)) / ($count - 1);
+        $variance = array_sum(array_map(fn ($x) => pow($x - $mean, 2), $prices)) / ($count - 1);
         $stdDev = sqrt($variance);
-        
+
         $result = [
             'absolute_volatility' => round($stdDev, 8),
             'relative_volatility' => $mean != 0 ? round(($stdDev / $mean) * 100, 4) : 0,
             'volatility_classification' => $this->classifyVolatility($stdDev, $mean),
         ];
-        
+
         // Calculate rolling volatilities for different periods
         foreach ($this->config['volatility']['rolling_periods'] as $period) {
             if ($count >= $period) {
                 $result["rolling_volatility_{$period}"] = $this->calculateRollingVolatility($prices, $period);
             }
         }
-        
+
         return $result;
     }
 
@@ -562,7 +559,7 @@ class StatisticalAnalysisService
     {
         $rawPrices = array_column($rawData, 'price');
         $cleanPrices = array_column($cleanData, 'price');
-        
+
         return [
             'normality_test' => $this->testNormality($cleanPrices),
             'outlier_impact' => $this->calculateOutlierImpact($rawPrices, $cleanPrices),
@@ -578,7 +575,7 @@ class StatisticalAnalysisService
         $rawCount = count($rawData);
         $cleanCount = count($cleanData);
         $outlierCount = count($outliers);
-        
+
         return [
             'total_data_points' => $rawCount,
             'clean_data_points' => $cleanCount,
@@ -596,11 +593,13 @@ class StatisticalAnalysisService
     {
         sort($values);
         $count = count($values);
-        
-        if ($count == 0) return 0;
-        
+
+        if ($count == 0) {
+            return 0;
+        }
+
         $middle = $count / 2;
-        
+
         if ($count % 2 == 0) {
             return ($values[$middle - 1] + $values[$middle]) / 2;
         } else {
@@ -615,38 +614,43 @@ class StatisticalAnalysisService
         if (empty($numericValues)) {
             return null;
         }
-        
+
         // Convert to strings for counting, then back to numbers
         $stringValues = array_map('strval', $numericValues);
         $frequencies = array_count_values($stringValues);
         $maxFreq = max($frequencies);
-        
+
         if ($maxFreq == 1) {
             return null; // No mode if all values appear once
         }
-        
+
         $modes = array_keys($frequencies, $maxFreq);
+
         return (float) $modes[0]; // Return first mode if multiple
     }
 
     private function calculateSkewness(array $values, float $mean, float $stdDev): float
     {
-        if ($stdDev == 0) return 0;
-        
+        if ($stdDev == 0) {
+            return 0;
+        }
+
         $n = count($values);
-        $sum = array_sum(array_map(fn($x) => pow(($x - $mean) / $stdDev, 3), $values));
-        
+        $sum = array_sum(array_map(fn ($x) => pow(($x - $mean) / $stdDev, 3), $values));
+
         return ($n / (($n - 1) * ($n - 2))) * $sum;
     }
 
     private function calculateKurtosis(array $values, float $mean, float $stdDev): float
     {
-        if ($stdDev == 0) return 0;
-        
+        if ($stdDev == 0) {
+            return 0;
+        }
+
         $n = count($values);
-        $sum = array_sum(array_map(fn($x) => pow(($x - $mean) / $stdDev, 4), $values));
-        
-        return (($n * ($n + 1)) / (($n - 1) * ($n - 2) * ($n - 3))) * $sum - 
+        $sum = array_sum(array_map(fn ($x) => pow(($x - $mean) / $stdDev, 4), $values));
+
+        return (($n * ($n + 1)) / (($n - 1) * ($n - 2) * ($n - 3))) * $sum -
                (3 * pow($n - 1, 2)) / (($n - 2) * ($n - 3));
     }
 
@@ -655,12 +659,13 @@ class StatisticalAnalysisService
         $index = ($percentile / 100) * (count($sortedValues) - 1);
         $lower = floor($index);
         $upper = ceil($index);
-        
+
         if ($lower == $upper) {
             return $sortedValues[$lower];
         }
-        
+
         $weight = $index - $lower;
+
         return $sortedValues[$lower] * (1 - $weight) + $sortedValues[$upper] * $weight;
     }
 
@@ -671,26 +676,42 @@ class StatisticalAnalysisService
             0.95 => 1.960,
             0.99 => 2.576,
         ];
-        
+
         return $zScores[$confidenceLevel] ?? 1.960; // Default to 95%
     }
 
     private function getTrendStrength(float $rSquared): string
     {
-        if ($rSquared > 0.7) return 'strong';
-        if ($rSquared > 0.4) return 'moderate';
-        if ($rSquared > 0.1) return 'weak';
+        if ($rSquared > 0.7) {
+            return 'strong';
+        }
+        if ($rSquared > 0.4) {
+            return 'moderate';
+        }
+        if ($rSquared > 0.1) {
+            return 'weak';
+        }
+
         return 'very_weak';
     }
 
     private function classifyVolatility(float $stdDev, float $mean): string
     {
         $cv = $mean != 0 ? ($stdDev / $mean) * 100 : 0;
-        
-        if ($cv < 5) return 'very_low';
-        if ($cv < 15) return 'low';
-        if ($cv < 30) return 'moderate';
-        if ($cv < 50) return 'high';
+
+        if ($cv < 5) {
+            return 'very_low';
+        }
+        if ($cv < 15) {
+            return 'low';
+        }
+        if ($cv < 30) {
+            return 'moderate';
+        }
+        if ($cv < 50) {
+            return 'high';
+        }
+
         return 'very_high';
     }
 
@@ -698,16 +719,16 @@ class StatisticalAnalysisService
     {
         $rollingVols = [];
         $count = count($prices);
-        
+
         for ($i = $period - 1; $i < $count; $i++) {
             $window = array_slice($prices, $i - $period + 1, $period);
             $mean = array_sum($window) / $period;
-            $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $window)) / ($period - 1);
+            $variance = array_sum(array_map(fn ($x) => pow($x - $mean, 2), $window)) / ($period - 1);
             $rollingVols[] = sqrt($variance);
         }
-        
+
         return [
-            'values' => array_map(fn($v) => round($v, 8), $rollingVols),
+            'values' => array_map(fn ($v) => round($v, 8), $rollingVols),
             'average' => count($rollingVols) > 0 ? round(array_sum($rollingVols) / count($rollingVols), 8) : 0,
             'min' => count($rollingVols) > 0 ? round(min($rollingVols), 8) : 0,
             'max' => count($rollingVols) > 0 ? round(max($rollingVols), 8) : 0,
@@ -721,15 +742,15 @@ class StatisticalAnalysisService
         }
 
         $mean = array_sum($prices) / count($prices);
-        $stdDev = sqrt(array_sum(array_map(fn($x) => pow($x - $mean, 2), $prices)) / (count($prices) - 1));
-        
+        $stdDev = sqrt(array_sum(array_map(fn ($x) => pow($x - $mean, 2), $prices)) / (count($prices) - 1));
+
         $skewness = $this->calculateSkewness($prices, $mean, $stdDev);
         $kurtosis = $this->calculateKurtosis($prices, $mean, $stdDev);
-        
+
         // Simple normality assessment based on skewness and kurtosis
         $normalityScore = 1 - (abs($skewness) / 3 + abs($kurtosis - 3) / 3) / 2;
         $normalityScore = max(0, min(1, $normalityScore));
-        
+
         return [
             'skewness' => round($skewness, 4),
             'kurtosis' => round($kurtosis, 4),
@@ -746,10 +767,10 @@ class StatisticalAnalysisService
 
         $rawMean = array_sum($rawPrices) / count($rawPrices);
         $cleanMean = array_sum($cleanPrices) / count($cleanPrices);
-        
+
         $meanDifference = abs($rawMean - $cleanMean);
         $percentageImpact = $rawMean != 0 ? ($meanDifference / $rawMean) * 100 : 0;
-        
+
         return [
             'raw_mean' => round($rawMean, 8),
             'clean_mean' => round($cleanMean, 8),
@@ -766,9 +787,9 @@ class StatisticalAnalysisService
         }
 
         $mean = array_sum($prices) / count($prices);
-        $stdDev = sqrt(array_sum(array_map(fn($x) => pow($x - $mean, 2), $prices)) / (count($prices) - 1));
+        $stdDev = sqrt(array_sum(array_map(fn ($x) => pow($x - $mean, 2), $prices)) / (count($prices) - 1));
         $cv = $mean != 0 ? ($stdDev / $mean) * 100 : 0;
-        
+
         return [
             'coefficient_of_variation' => round($cv, 4),
             'consistency_level' => $cv < 10 ? 'high' : ($cv < 25 ? 'moderate' : 'low'),
@@ -778,14 +799,16 @@ class StatisticalAnalysisService
 
     private function calculateQualityScore(int $rawCount, int $cleanCount, int $outlierCount): float
     {
-        if ($rawCount == 0) return 0;
-        
+        if ($rawCount == 0) {
+            return 0;
+        }
+
         $retentionRate = $cleanCount / $rawCount;
         $outlierRate = $outlierCount / $rawCount;
-        
+
         // Quality score based on data retention and outlier rate
         $score = $retentionRate * (1 - min($outlierRate * 2, 0.5)); // Penalize high outlier rates
-        
+
         return round(max(0, min(1, $score)), 4);
     }
 
@@ -793,7 +816,7 @@ class StatisticalAnalysisService
     {
         $totalFields = count($rawData) * 7; // 7 fields per record
         $completeFields = 0;
-        
+
         foreach ($rawData as $record) {
             $completeFields += count(array_filter([
                 $record['price'] ?? null,
@@ -803,11 +826,11 @@ class StatisticalAnalysisService
                 $record['timestamp'] ?? null,
                 $record['merchant_trades'] ?? null,
                 $record['completion_rate'] ?? null,
-            ], fn($value) => $value !== null && $value !== ''));
+            ], fn ($value) => $value !== null && $value !== ''));
         }
-        
+
         $completeness = $totalFields > 0 ? ($completeFields / $totalFields) * 100 : 0;
-        
+
         return [
             'percentage' => round($completeness, 2),
             'level' => $completeness > 90 ? 'excellent' : ($completeness > 75 ? 'good' : ($completeness > 50 ? 'fair' : 'poor')),
