@@ -49,7 +49,8 @@ class BinanceP2PService
         string $tradeType = 'BUY',
         int $page = 1,
         int $rows = 50,
-        ?float $transAmount = null
+        ?float $transAmount = null,
+        array $volumeRanges = []
     ): ?array {
         // Check rate limit
         if (RateLimiter::tooManyAttempts(self::RATE_LIMIT_KEY, self::RATE_LIMIT_MAX_ATTEMPTS)) {
@@ -61,11 +62,16 @@ class BinanceP2PService
             return null;
         }
 
+        // Use configurable volume ranges or default sampling strategy
+        if (!empty($volumeRanges)) {
+            return $this->collectMultiVolumeData($asset, $fiat, $tradeType, $page, $rows, $volumeRanges);
+        }
+
         $payload = [
             'fiat' => strtoupper($fiat),
             'page' => $page,
-            'rows' => min($rows, 10), // Match example that uses 10 rows
-            'transAmount' => $transAmount ?? 1000, // Always include transAmount like the example
+            'rows' => min($rows, 20), // Increased from 10 to get more diverse pricing
+            'transAmount' => $transAmount ?? 500, // Reduced from 1000 to get more realistic mid-tier pricing
             'tradeType' => strtoupper($tradeType),
             'asset' => strtoupper($asset),
             'countries' => [],
@@ -362,6 +368,158 @@ class BinanceP2PService
         ]);
     }
 
+
+    /**
+     * Collect data across multiple volume ranges for better price distribution
+     */
+    private function collectMultiVolumeData(
+        string $asset,
+        string $fiat,
+        string $tradeType,
+        int $page,
+        int $rows,
+        array $volumeRanges
+    ): ?array {
+        $combinedData = [
+            'code' => '000000',
+            'message' => null,
+            'data' => [],
+            'total' => 0,
+            'success' => true,
+            'volume_sampling_metadata' => [
+                'ranges_used' => $volumeRanges,
+                'collection_strategy' => 'multi_volume_sampling'
+            ]
+        ];
+
+        $totalAdsCollected = 0;
+        $rowsPerRange = max(1, intval($rows / count($volumeRanges)));
+
+        foreach ($volumeRanges as $volumeRange) {
+            $rangeData = $this->getSingleVolumeRangeData(
+                $asset, 
+                $fiat, 
+                $tradeType, 
+                $page, 
+                $rowsPerRange, 
+                $volumeRange
+            );
+
+            if ($rangeData && isset($rangeData['data']) && is_array($rangeData['data'])) {
+                // Add volume range metadata to each ad
+                foreach ($rangeData['data'] as &$ad) {
+                    $ad['volume_range_metadata'] = [
+                        'target_volume' => $volumeRange,
+                        'collection_method' => 'volume_stratified'
+                    ];
+                }
+                
+                $combinedData['data'] = array_merge($combinedData['data'], $rangeData['data']);
+                $totalAdsCollected += count($rangeData['data']);
+            }
+        }
+
+        $combinedData['total'] = $totalAdsCollected;
+        
+        // Sort by price to maintain consistent ordering
+        if (!empty($combinedData['data'])) {
+            usort($combinedData['data'], function($a, $b) use ($tradeType) {
+                $priceA = (float) $a['adv']['price'];
+                $priceB = (float) $b['adv']['price'];
+                
+                // For BUY orders: lower prices are better (ascending)
+                // For SELL orders: higher prices are better (descending)
+                return $tradeType === 'BUY' ? $priceA <=> $priceB : $priceB <=> $priceA;
+            });
+        }
+
+        Log::debug('Multi-volume data collection completed', [
+            'asset' => $asset,
+            'fiat' => $fiat,
+            'trade_type' => $tradeType,
+            'volume_ranges' => $volumeRanges,
+            'total_ads' => $totalAdsCollected
+        ]);
+
+        return $combinedData;
+    }
+
+    /**
+     * Get data for a specific volume range
+     */
+    private function getSingleVolumeRangeData(
+        string $asset,
+        string $fiat,
+        string $tradeType,
+        int $page,
+        int $rows,
+        float $targetVolume
+    ): ?array {
+        $payload = [
+            'fiat' => strtoupper($fiat),
+            'page' => $page,
+            'rows' => min($rows, 20),
+            'transAmount' => $targetVolume,
+            'tradeType' => strtoupper($tradeType),
+            'asset' => strtoupper($asset),
+            'countries' => [],
+            'proMerchantAds' => false,
+            'shieldMerchantAds' => false,
+            'filterType' => 'all',
+            'periods' => [],
+            'additionalKycVerifyFilter' => 0,
+            'publisherType' => 'merchant',
+            'payTypes' => [],
+            'classifies' => ['mass', 'profession', 'fiat_trade'],
+            'tradedWith' => false,
+            'followed' => false,
+        ];
+
+        return $this->executeWithRetry(function () use ($payload) {
+            RateLimiter::hit(self::RATE_LIMIT_KEY);
+            
+            $startTime = microtime(true);
+            
+            $response = Http::withHeaders($this->defaultHeaders)
+                ->timeout(30)
+                ->connectTimeout(10)
+                ->post(self::API_URL, $payload);
+
+            $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                if (!$this->validateApiResponse($data)) {
+                    throw new Exception('Invalid API response structure');
+                }
+                
+                Log::debug('Volume range data collected', [
+                    'volume' => $payload['transAmount'],
+                    'trade_type' => $payload['tradeType'],
+                    'response_time_ms' => $responseTime,
+                    'ads_count' => count($data['data'] ?? [])
+                ]);
+                
+                return $data;
+            }
+
+            $this->handleHttpError($response, $payload);
+            return null;
+        });
+    }
+
+    /**
+     * Get diversified market data using multiple volume sampling
+     */
+    public function getDiversifiedMarketData(
+        string $asset = 'USDT',
+        string $fiat = 'VES',
+        string $tradeType = 'BUY',
+        array $volumeRanges = [100, 500, 1000, 2500, 5000]
+    ): ?array {
+        return $this->getP2PData($asset, $fiat, $tradeType, 1, 50, null, $volumeRanges);
+    }
 
     /**
      * Get API health status

@@ -48,19 +48,19 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
         <AppLayout>
             <Head title="Análisis Estadístico" />
             
-            <div className="space-y-6 p-6">
+            <div className="space-y-4 p-3 max-w-none">
                 {/* Page Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground">Análisis Estadístico</h1>
-                        <p className="text-muted-foreground mt-1">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                    <div className="flex-1">
+                        <h1 className="text-2xl font-bold text-foreground">Análisis Estadístico</h1>
+                        <p className="text-muted-foreground text-sm mt-1">
                             Análisis estadístico avanzado para mercados P2P de criptomonedas con detección de valores atípicos y análisis de tendencias
                         </p>
                     </div>
                     
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 lg:flex-nowrap">
                         <Select value={selectedAsset} onValueChange={setSelectedAsset}>
-                            <SelectTrigger className="w-40">
+                            <SelectTrigger className="w-36">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -73,7 +73,7 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                         </Select>
                         
                         <Select value={selectedFiat} onValueChange={setSelectedFiat}>
-                            <SelectTrigger className="w-44">
+                            <SelectTrigger className="w-40">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -86,7 +86,7 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                         </Select>
                         
                         <Select value={selectedTradeType} onValueChange={setSelectedTradeType}>
-                            <SelectTrigger className="w-24">
+                            <SelectTrigger className="w-20">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -98,66 +98,66 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                 </div>
 
                 {/* Feature Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
                     <Card className="border-border bg-card">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base text-foreground">Detección de Valores Atípicos</CardTitle>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm text-foreground">Detección de Valores Atípicos</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Método IQR</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Puntuación Z</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Puntuación Z Modificada</Badge>
+                        <CardContent className="pt-0">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">IQR</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Z-Score</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Z Modificada</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-2">
+                            <p className="text-xs text-muted-foreground">
                                 Identifica y filtra valores atípicos de precios que podrían sesgar los promedios del mercado
                             </p>
                         </CardContent>
                     </Card>
 
                     <Card className="border-border bg-card">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base text-foreground">Promedios Ponderados</CardTitle>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm text-foreground">Promedios Ponderados</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Ponderado por Volumen</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Ponderado por Tiempo</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Ponderado por Confiabilidad</Badge>
+                        <CardContent className="pt-0">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Por Volumen</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Por Tiempo</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Por Confiabilidad</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-2">
+                            <p className="text-xs text-muted-foreground">
                                 Calcula promedios sofisticados basados en múltiples factores
                             </p>
                         </CardContent>
                     </Card>
 
                     <Card className="border-border bg-card">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base text-foreground">Pruebas Estadísticas</CardTitle>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm text-foreground">Pruebas Estadísticas</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Intervalos de Confianza</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Pruebas de Normalidad</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Análisis de Tendencias</Badge>
+                        <CardContent className="pt-0">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Intervalos</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Normalidad</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Tendencias</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-2">
+                            <p className="text-xs text-muted-foreground">
                                 Medidas estadísticas avanzadas y pruebas de hipótesis
                             </p>
                         </CardContent>
                     </Card>
 
                     <Card className="border-border bg-card">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base text-foreground">Análisis de Mercado</CardTitle>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm text-foreground">Análisis de Mercado</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Análisis de Volatilidad</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Análisis de Percentiles</Badge>
-                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Comparación de Mercados</Badge>
+                        <CardContent className="pt-0">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Volatilidad</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Percentiles</Badge>
+                                <Badge variant="outline" className="text-xs border-muted-foreground/20 text-muted-foreground">Comparación</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-2">
+                            <p className="text-xs text-muted-foreground">
                                 Análisis integral de condiciones del mercado y comparación
                             </p>
                         </CardContent>
@@ -165,7 +165,7 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                 </div>
 
                 {/* Analysis Tabs */}
-                <Tabs defaultValue="comprehensive" className="space-y-6">
+                <Tabs defaultValue="comprehensive" className="space-y-4">
                     <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="comprehensive">Integral</TabsTrigger>
                         <TabsTrigger value="detailed">Análisis Detallado</TabsTrigger>
@@ -173,14 +173,14 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                         <TabsTrigger value="volatility">Volatilidad</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="comprehensive" className="space-y-6">
+                    <TabsContent value="comprehensive" className="space-y-4">
                         <ComprehensiveMarketAnalysis
                             asset={selectedAsset}
                             fiat={selectedFiat}
                         />
                     </TabsContent>
 
-                    <TabsContent value="detailed" className="space-y-6">
+                    <TabsContent value="detailed" className="space-y-4">
                         <StatisticalAnalysisDashboard
                             asset={selectedAsset}
                             fiat={selectedFiat}
@@ -188,7 +188,7 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                         />
                     </TabsContent>
 
-                    <TabsContent value="outliers" className="space-y-6">
+                    <TabsContent value="outliers" className="space-y-4">
                         <OutlierAnalysisChart
                             asset={selectedAsset}
                             fiat={selectedFiat}
@@ -196,7 +196,7 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                         />
                     </TabsContent>
 
-                    <TabsContent value="volatility" className="space-y-6">
+                    <TabsContent value="volatility" className="space-y-4">
                         <VolatilityAnalysisChart
                             asset={selectedAsset}
                             fiat={selectedFiat}
@@ -206,18 +206,18 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                 </Tabs>
 
                 {/* Statistical Methods Information */}
-                <Card className="mt-8 border-border bg-card">
+                <Card className="mt-6 border-border bg-card">
                     <CardHeader>
                         <CardTitle className="text-foreground">Acerca de los Métodos Estadísticos</CardTitle>
                         <CardDescription className="text-muted-foreground">
                             Comprendiendo los algoritmos y técnicas utilizados en este análisis
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <CardContent className="pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div>
-                                <h4 className="font-semibold text-foreground mb-2">Métodos de Detección de Valores Atípicos</h4>
-                                <div className="space-y-2 text-sm text-muted-foreground">
+                                <h4 className="font-semibold text-foreground mb-2 text-sm">Métodos de Detección de Valores Atípicos</h4>
+                                <div className="space-y-1 text-xs text-muted-foreground">
                                     <div>
                                         <strong className="text-foreground">Método IQR:</strong> Usa cuartiles para identificar valores fuera de 1.5 × IQR desde Q1/Q3
                                     </div>
@@ -231,8 +231,8 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                             </div>
 
                             <div>
-                                <h4 className="font-semibold text-foreground mb-2">Promediado Ponderado</h4>
-                                <div className="space-y-2 text-sm text-muted-foreground">
+                                <h4 className="font-semibold text-foreground mb-2 text-sm">Promediado Ponderado</h4>
+                                <div className="space-y-1 text-xs text-muted-foreground">
                                     <div>
                                         <strong className="text-foreground">Ponderado por Volumen:</strong> Pondera precios por volumen de negociación (VWAP)
                                     </div>
@@ -246,8 +246,8 @@ export default function StatisticalAnalysisPage({ auth }: StatisticalAnalysisPag
                             </div>
 
                             <div>
-                                <h4 className="font-semibold text-foreground mb-2">Análisis Estadístico</h4>
-                                <div className="space-y-2 text-sm text-muted-foreground">
+                                <h4 className="font-semibold text-foreground mb-2 text-sm">Análisis Estadístico</h4>
+                                <div className="space-y-1 text-xs text-muted-foreground">
                                     <div>
                                         <strong className="text-foreground">Intervalos de Confianza:</strong> Rango estadístico para el precio medio real
                                     </div>

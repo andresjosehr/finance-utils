@@ -96,13 +96,27 @@ class P2PDataCollectionService
         ]);
 
         try {
-            // Collect buy and sell data
+            // Determine collection strategy based on pair configuration
+            $volumeRanges = $pair->getEffectiveVolumeRanges();
+            $sampleVolume = $pair->getEffectiveSampleVolume();
+
+            Log::debug('P2P Data Collection Debug', [
+                'pair' => $pair->pair_symbol,
+                'use_volume_sampling' => $pair->use_volume_sampling,
+                'volume_ranges' => $volumeRanges,
+                'sample_volume' => $sampleVolume,
+                'should_use_sampling' => $pair->shouldUseVolumeSampling()
+            ]);
+
+            // Collect buy and sell data with appropriate strategy
             $buyData = $this->binanceService->getP2PData(
                 $pair->asset,
                 $pair->fiat,
                 'BUY',
                 1,
-                50
+                50,
+                $pair->shouldUseVolumeSampling() ? null : $sampleVolume,
+                $volumeRanges
             );
 
             $sellData = $this->binanceService->getP2PData(
@@ -110,7 +124,9 @@ class P2PDataCollectionService
                 $pair->fiat,
                 'SELL',
                 1,
-                50
+                50,
+                $pair->shouldUseVolumeSampling() ? null : $sampleVolume,
+                $volumeRanges
             );
 
             // Process buy data

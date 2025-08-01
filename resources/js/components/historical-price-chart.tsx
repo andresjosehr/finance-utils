@@ -34,42 +34,59 @@ ChartJS.register(
 
 interface HistoricalDataPoint {
     timestamp: string;
-    buy_price: number | null;
-    sell_price: number | null;
-    spread: number | null;
-    data_quality: number;
+    trade_type: string;
+    best_price: number;
+    avg_price: number;
+    worst_price: number;
+    median_price: number | null;
+    volume_weighted_price: number | null;
+    total_volume: number;
+    order_count: number;
+    price_spread: number;
+    data_quality_score: number;
+}
+
+interface SpreadDataPoint {
+    timestamp: string;
+    buy_price: number;
+    sell_price: number;
+    spread_absolute: number;
+    spread_percentage: number;
 }
 
 interface HistoricalPriceData {
     asset: string;
     fiat: string;
-    time_range: {
-        start: string;
-        end: string;
-        hours: number;
+    hours: number;
+    summary: {
+        total_data_points: number;
+        time_range: {
+            start: string;
+            end: string;
+            duration_hours: number;
+        };
+        price_summary: {
+            min_price: number;
+            max_price: number;
+            avg_price: number;
+            price_volatility: number;
+        } | null;
+        data_quality: {
+            avg_quality_score: number;
+            min_quality_score: number;
+            max_quality_score: number;
+        };
+        spread_opportunities: number;
     };
-    data_points: HistoricalDataPoint[];
-    statistics: {
-        total_points: number;
-        buy_price_avg: number | null;
-        sell_price_avg: number | null;
-        avg_spread: number | null;
-        max_spread: number | null;
-        min_spread: number | null;
-        volatility: number;
-        quality_score: number;
-    };
-    metadata: {
-        collection_frequency_minutes: number;
-        data_completeness: number;
-        missing_data_points: number;
-    };
+    historical_data: HistoricalDataPoint[];
+    spread_data: SpreadDataPoint[];
 }
 
 interface HistoricalPriceChartProps {
     asset?: string;
     fiat?: string;
     hours?: number;
+    interval?: number;
     className?: string;
 }
 
@@ -77,12 +94,14 @@ export function HistoricalPriceChart({
     asset = 'USDT',
     fiat = 'VES',
     hours = 24,
+    interval = 10,
     className,
 }: HistoricalPriceChartProps) {
     const [data, setData] = useState<HistoricalPriceData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedHours, setSelectedHours] = useState<number>(hours);
+    const [selectedInterval, setSelectedInterval] = useState<number>(interval);
 
     const fetchHistoricalData = async () => {
         setLoading(true);
@@ -93,6 +112,7 @@ export function HistoricalPriceChart({
                 asset,
                 fiat,
                 hours: selectedHours.toString(),
+                interval: selectedInterval.toString(),
             });
 
             const response = await fetch(`/api/binance-p2p/historical-prices?${params}`);
@@ -112,7 +132,7 @@ export function HistoricalPriceChart({
 
     useEffect(() => {
         fetchHistoricalData();
-    }, [asset, fiat, selectedHours]);
+    }, [asset, fiat, selectedHours, selectedInterval]);
 
     const formatNumber = (value: number | null, decimals = 2): string => {
         if (value === null || value === undefined || isNaN(value)) return 'N/A';
@@ -171,28 +191,76 @@ export function HistoricalPriceChart({
     const getChartData = () => {
         if (!data || !data.historical_data || !data.historical_data.length) return null;
 
-        const validDataPoints = data.historical_data.filter(point => 
-            point.buy_price !== null || point.sell_price !== null
-        );
+        // Separate buy and sell data points
+        const buyData = data.historical_data.filter(point => point.trade_type === 'BUY');
+        const sellData = data.historical_data.filter(point => point.trade_type === 'SELL');
+
+        // Create time-based mapping for better alignment
+        const timeMap = new Map();
+        
+        buyData.forEach(point => {
+            const timeKey = new Date(point.timestamp).toISOString();
+            if (!timeMap.has(timeKey)) {
+                timeMap.set(timeKey, { timestamp: timeKey });
+            }
+            timeMap.get(timeKey).buy_price = point.avg_price;
+            timeMap.get(timeKey).buy_quality = point.data_quality_score;
+        });
+
+        sellData.forEach(point => {
+            const timeKey = new Date(point.timestamp).toISOString();
+            if (!timeMap.has(timeKey)) {
+                timeMap.set(timeKey, { timestamp: timeKey });
+            }
+            timeMap.get(timeKey).sell_price = point.avg_price;
+            timeMap.get(timeKey).sell_quality = point.data_quality_score;
+        });
+
+        // Convert to sorted array
+        const validDataPoints = Array.from(timeMap.values())
+            .filter(point => point.buy_price || point.sell_price)
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
         const labels = validDataPoints.map(point => formatDateTime(point.timestamp));
-        const buyPrices = validDataPoints.map(point => point.buy_price);
-        const sellPrices = validDataPoints.map(point => point.sell_price);
+        const buyPrices = validDataPoints.map(point => point.buy_price || null);
+        const sellPrices = validDataPoints.map(point => point.sell_price || null);
 
-        // Create spread data for filled area
-        const spreadData = validDataPoints.map((point, index) => {
-            if (point.buy_price !== null && point.sell_price !== null) {
-                return Math.max(point.buy_price, point.sell_price);
-            }
-            return null;
-        });
+        // Create spread data for filled area using spread_data if available
+        let spreadDataUpper = null;
+        let spreadDataLower = null;
 
-        const spreadDataLower = validDataPoints.map((point, index) => {
-            if (point.buy_price !== null && point.sell_price !== null) {
-                return Math.min(point.buy_price, point.sell_price);
-            }
-            return null;
-        });
+        if (data.spread_data && data.spread_data.length > 0) {
+            // Use actual spread data from API
+            const spreadMap = new Map();
+            data.spread_data.forEach(spread => {
+                spreadMap.set(spread.timestamp, spread);
+            });
+
+            spreadDataUpper = validDataPoints.map(point => {
+                const spread = spreadMap.get(point.timestamp);
+                return spread ? Math.max(spread.buy_price, spread.sell_price) : null;
+            });
+
+            spreadDataLower = validDataPoints.map(point => {
+                const spread = spreadMap.get(point.timestamp);
+                return spread ? Math.min(spread.buy_price, spread.sell_price) : null;
+            });
+        } else {
+            // Fallback: calculate from available data
+            spreadDataUpper = validDataPoints.map(point => {
+                if (point.buy_price && point.sell_price) {
+                    return Math.max(point.buy_price, point.sell_price);
+                }
+                return null;
+            });
+
+            spreadDataLower = validDataPoints.map(point => {
+                if (point.buy_price && point.sell_price) {
+                    return Math.min(point.buy_price, point.sell_price);
+                }
+                return null;
+            });
+        }
 
         return {
             labels,
@@ -223,7 +291,7 @@ export function HistoricalPriceChart({
                 },
                 {
                     label: 'Área de Spread',
-                    data: spreadData,
+                    data: spreadDataUpper,
                     borderColor: 'rgba(168, 85, 247, 0.3)',
                     backgroundColor: 'rgba(168, 85, 247, 0.1)',
                     borderWidth: 0,
@@ -280,31 +348,53 @@ export function HistoricalPriceChart({
                     intersect: false,
                     callbacks: {
                         title: (context: any) => {
-                            const point = data?.data_points[context[0].dataIndex];
-                            if (point) {
-                                return new Date(point.timestamp).toLocaleString('es-ES');
+                            if (context.length > 0) {
+                                const chartData = getChartData();
+                                if (chartData && chartData.labels && context[0].dataIndex < chartData.labels.length) {
+                                    return chartData.labels[context[0].dataIndex];
+                                }
                             }
                             return '';
                         },
                         label: (context: any) => {
-                            const point = data?.data_points[context.dataIndex];
-                            if (!point) return '';
+                            const chartData = getChartData();
+                            if (!chartData) return '';
 
-                            if (context.datasetIndex === 0 && point.buy_price !== null) {
-                                return `Precio de Compra: ${formatNumber(point.buy_price, 4)} ${fiat}`;
+                            const dataIndex = context.dataIndex;
+                            
+                            if (context.datasetIndex === 0) {
+                                const buyPrice = chartData.datasets[0].data[dataIndex];
+                                if (buyPrice !== null && buyPrice !== undefined) {
+                                    return `Precio de Compra: ${formatNumber(buyPrice, 4)} ${fiat}`;
+                                }
                             }
-                            if (context.datasetIndex === 1 && point.sell_price !== null) {
-                                return `Precio de Venta: ${formatNumber(point.sell_price, 4)} ${fiat}`;
+                            if (context.datasetIndex === 1) {
+                                const sellPrice = chartData.datasets[1].data[dataIndex];
+                                if (sellPrice !== null && sellPrice !== undefined) {
+                                    return `Precio de Venta: ${formatNumber(sellPrice, 4)} ${fiat}`;
+                                }
                             }
                             return '';
                         },
                         afterBody: (context: any) => {
-                            const point = data?.data_points[context[0].dataIndex];
-                            if (point && point.spread !== null) {
-                                return [
-                                    `Spread: ${formatNumber(point.spread, 4)} ${fiat}`,
-                                    `Calidad: ${formatPercentage(point.data_quality * 100)}`,
-                                ];
+                            if (context.length === 0) return [];
+                            
+                            const dataIndex = context[0].dataIndex;
+                            const chartData = getChartData();
+                            
+                            if (chartData && data?.spread_data) {
+                                const spread = data.spread_data.find(s => {
+                                    const spreadTime = formatDateTime(s.timestamp);
+                                    const labelTime = chartData.labels[dataIndex];
+                                    return spreadTime === labelTime;
+                                });
+                                
+                                if (spread) {
+                                    return [
+                                        `Spread: ${formatNumber(spread.spread_absolute, 4)} ${fiat}`,
+                                        `Spread %: ${formatNumber(spread.spread_percentage, 2)}%`,
+                                    ];
+                                }
                             }
                             return [];
                         },
@@ -405,6 +495,19 @@ export function HistoricalPriceChart({
                             <SelectItem value="168">7 días</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <Select value={selectedInterval.toString()} onValueChange={(value) => setSelectedInterval(parseInt(value))}>
+                        <SelectTrigger className="w-36">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="5">5 minutos</SelectItem>
+                            <SelectItem value="10">10 minutos</SelectItem>
+                            <SelectItem value="15">15 minutos</SelectItem>
+                            <SelectItem value="30">30 minutos</SelectItem>
+                            <SelectItem value="60">1 hora</SelectItem>
+                        </SelectContent>
+                    </Select>
                     
                     <Button onClick={fetchHistoricalData} size="sm">
                         Actualizar
@@ -417,7 +520,7 @@ export function HistoricalPriceChart({
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         Resumen Estadístico
-                        {data.summary?.data_quality ? getQualityBadge(data.summary.data_quality.average_score) : <Badge variant="secondary">N/A</Badge>}
+                        {data.summary?.data_quality ? getQualityBadge(data.summary.data_quality.avg_quality_score) : <Badge variant="secondary">N/A</Badge>}
                     </CardTitle>
                     <CardDescription>
                         Métricas principales para el período de {data.hours || selectedHours} horas
@@ -427,35 +530,32 @@ export function HistoricalPriceChart({
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center p-4 bg-green-50 rounded-lg">
                             <div className="text-xl font-bold text-green-600">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.buy_price_avg, 4) : 'N/A'}
+                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.min_price, 4) : 'N/A'}
                             </div>
-                            <div className="text-sm text-green-600">Precio Promedio de Compra</div>
+                            <div className="text-sm text-green-600">Precio Mínimo</div>
                         </div>
                         
                         <div className="text-center p-4 bg-red-50 rounded-lg">
                             <div className="text-xl font-bold text-red-600">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.sell_price_avg, 4) : 'N/A'}
+                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.max_price, 4) : 'N/A'}
                             </div>
-                            <div className="text-sm text-red-600">Precio Promedio de Venta</div>
+                            <div className="text-sm text-red-600">Precio Máximo</div>
                         </div>
                         
                         <div className="text-center p-4 bg-purple-50 rounded-lg">
                             <div className="text-xl font-bold text-purple-600">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.avg_spread, 4) : 'N/A'}
+                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.avg_price, 4) : 'N/A'}
                             </div>
-                            <div className="text-sm text-purple-600">Spread Promedio</div>
-                            <div className="text-xs text-gray-600 mt-1">
-                                Max: {data.summary?.price_summary ? formatNumber(data.summary.price_summary.max_spread, 4) : 'N/A'}
-                            </div>
+                            <div className="text-sm text-purple-600">Precio Promedio</div>
                         </div>
                         
                         <div className="text-center p-4 bg-blue-50 rounded-lg">
                             <div className="text-xl font-bold text-blue-600">
-                                {data.summary?.price_summary ? getVolatilityBadge(data.summary.price_summary.volatility) : <Badge variant="secondary">N/A</Badge>}
+                                {data.summary?.price_summary ? getVolatilityBadge(data.summary.price_summary.price_volatility) : <Badge variant="secondary">N/A</Badge>}
                             </div>
                             <div className="text-sm text-blue-600">Volatilidad</div>
                             <div className="text-xs text-gray-600 mt-1">
-                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.volatility, 2) + '%' : 'N/A'}
+                                {data.summary?.price_summary ? formatNumber(data.summary.price_summary.price_volatility, 2) + '%' : 'N/A'}
                             </div>
                         </div>
                     </div>
@@ -496,16 +596,16 @@ export function HistoricalPriceChart({
                             <span className="font-semibold">{data.summary?.total_data_points || 0}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>Completitud de datos:</span>
-                            <span className="font-semibold">{data.summary?.data_quality ? formatPercentage(data.summary.data_quality.completeness_rate) : 'N/A'}</span>
+                            <span>Calidad promedio:</span>
+                            <span className="font-semibold">{data.summary?.data_quality ? formatNumber(data.summary.data_quality.avg_quality_score, 3) : 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>Datos faltantes:</span>
-                            <span className="font-semibold text-red-600">{data.summary?.data_quality ? data.summary.data_quality.missing_points : 'N/A'}</span>
+                            <span>Calidad mínima:</span>
+                            <span className="font-semibold text-red-600">{data.summary?.data_quality ? formatNumber(data.summary.data_quality.min_quality_score, 3) : 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>Puntuación de calidad:</span>
-                            <span className="font-semibold">{data.summary?.data_quality ? formatNumber(data.summary.data_quality.average_score, 3) : 'N/A'}</span>
+                            <span>Calidad máxima:</span>
+                            <span className="font-semibold text-green-600">{data.summary?.data_quality ? formatNumber(data.summary.data_quality.max_quality_score, 3) : 'N/A'}</span>
                         </div>
                     </CardContent>
                 </Card>

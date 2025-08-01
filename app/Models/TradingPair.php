@@ -19,6 +19,9 @@ class TradingPair extends Model
         'collection_config',
         'min_trade_amount',
         'max_trade_amount',
+        'volume_ranges',
+        'use_volume_sampling',
+        'default_sample_volume',
     ];
 
     protected $casts = [
@@ -27,6 +30,9 @@ class TradingPair extends Model
         'min_trade_amount' => 'decimal:8',
         'max_trade_amount' => 'decimal:8',
         'collection_interval_minutes' => 'integer',
+        'volume_ranges' => 'array',
+        'use_volume_sampling' => 'boolean',
+        'default_sample_volume' => 'decimal:2',
     ];
 
     /**
@@ -179,5 +185,55 @@ class TradingPair extends Model
     public function scopeForFiat($query, string $fiat)
     {
         return $query->where('fiat', strtoupper($fiat));
+    }
+
+    /**
+     * Get the effective volume ranges for data collection
+     */
+    public function getEffectiveVolumeRanges(): array
+    {
+        if (!$this->use_volume_sampling || empty($this->volume_ranges)) {
+            return [];
+        }
+
+        return $this->volume_ranges;
+    }
+
+    /**
+     * Get the effective sample volume for single-point collection
+     */
+    public function getEffectiveSampleVolume(): float
+    {
+        return $this->default_sample_volume ?? 500.00;
+    }
+
+    /**
+     * Check if this pair should use volume sampling
+     */
+    public function shouldUseVolumeSampling(): bool
+    {
+        return $this->use_volume_sampling && !empty($this->volume_ranges);
+    }
+
+    /**
+     * Enable volume sampling for this trading pair
+     */
+    public function enableVolumeSampling(array $volumeRanges = [100, 500, 1000, 2500, 5000]): void
+    {
+        $this->update([
+            'use_volume_sampling' => true,
+            'volume_ranges' => $volumeRanges
+        ]);
+    }
+
+    /**
+     * Disable volume sampling for this trading pair
+     */
+    public function disableVolumeSampling(): void
+    {
+        $this->update([
+            'use_volume_sampling' => false,
+            'volume_ranges' => null
+        ]);
     }
 }

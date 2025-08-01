@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\TradingPair;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class TradingPairsSeeder extends Seeder
 {
@@ -12,20 +13,16 @@ class TradingPairsSeeder extends Seeder
      */
     public function run(): void
     {
+        // Disable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+        // Erease all pairs
+        TradingPair::truncate();
+
         $pairs = [
             [
                 'asset' => 'USDT',
                 'fiat' => 'VES',
-                'collection_interval_minutes' => 5,
-                'collection_config' => [
-                    'rows' => 50,
-                    'priority' => 'high'
-                ]
-            ],
-            [
-                'asset' => 'USDT',
-                'fiat' => 'USD',
-                'collection_interval_minutes' => 5,
+                'collection_interval_minutes' => 1,
                 'collection_config' => [
                     'rows' => 50,
                     'priority' => 'high'
@@ -38,33 +35,6 @@ class TradingPairsSeeder extends Seeder
                 'collection_config' => [
                     'rows' => 30,
                     'priority' => 'medium'
-                ]
-            ],
-            [
-                'asset' => 'BTC',
-                'fiat' => 'USD',
-                'collection_interval_minutes' => 10,
-                'collection_config' => [
-                    'rows' => 30,
-                    'priority' => 'medium'
-                ]
-            ],
-            [
-                'asset' => 'ETH',
-                'fiat' => 'VES',
-                'collection_interval_minutes' => 15,
-                'collection_config' => [
-                    'rows' => 20,
-                    'priority' => 'low'
-                ]
-            ],
-            [
-                'asset' => 'ETH',
-                'fiat' => 'USD',
-                'collection_interval_minutes' => 15,
-                'collection_config' => [
-                    'rows' => 20,
-                    'priority' => 'low'
                 ]
             ],
             [
@@ -77,7 +47,79 @@ class TradingPairsSeeder extends Seeder
                 ]
             ],
             [
-                'asset' => 'DAI',
+                'asset' => 'FDUSD',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 10,
+                'collection_config' => [
+                    'rows' => 30,
+                    'priority' => 'medium'
+                ]
+            ],
+            [
+                'asset' => 'BNB',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 15,
+                'collection_config' => [
+                    'rows' => 20,
+                    'priority' => 'low'
+                ]
+            ],
+            [
+                'asset' => 'ETH',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 15,
+                'collection_config' => [
+                    'rows' => 20,
+                    'priority' => 'low'
+                ]
+            ],
+            [
+                'asset' => 'DOGE',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 15,
+                'collection_config' => [
+                    'rows' => 20,
+                    'priority' => 'low'
+                ]
+            ],
+            [
+                'asset' => 'ADA',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 15,
+                'collection_config' => [
+                    'rows' => 20,
+                    'priority' => 'low'
+                ]
+            ],
+            [
+                'asset' => 'XRP',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 15,
+                'collection_config' => [
+                    'rows' => 20,
+                    'priority' => 'low'
+                ]
+            ],
+            [
+                'asset' => 'WLD',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 15,
+                'collection_config' => [
+                    'rows' => 20,
+                    'priority' => 'low'
+                ]
+            ],
+            [
+                'asset' => 'TRUMP',
+                'fiat' => 'VES',
+                'collection_interval_minutes' => 15,
+                'collection_config' => [
+                    'rows' => 20,
+                    'priority' => 'low'
+                ]
+            ],
+            [
+                'asset' => 'SOL',
                 'fiat' => 'VES',
                 'collection_interval_minutes' => 15,
                 'collection_config' => [
@@ -105,6 +147,9 @@ class TradingPairsSeeder extends Seeder
                 ]
             );
         }
+
+        // Enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
 
         $this->command->info('Created ' . count($pairs) . ' trading pairs');
     }

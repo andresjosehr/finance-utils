@@ -422,6 +422,7 @@ class BinanceP2PController extends Controller
         $asset = strtoupper($request->get('asset', 'USDT'));
         $fiat = strtoupper($request->get('fiat', 'VES'));
         $hours = min((int) $request->get('hours', 24), 168); // Limit to 1 week maximum
+        $intervalMinutes = max((int) $request->get('interval', 10), 5); // Default 10 minutes, minimum 5
 
         // Validate parameters
         if (empty($asset) || empty($fiat)) {
@@ -463,38 +464,42 @@ class BinanceP2PController extends Controller
                 ]);
             }
 
-            // Process snapshots and extract price data
+            // Group snapshots by time intervals (e.g., every 10 minutes)
+            $groupedData = $this->groupSnapshotsByInterval($snapshots, $intervalMinutes);
+
+            // Process grouped data and extract price data
             $historicalData = [];
             $buyPrices = [];
             $sellPrices = [];
 
-            foreach ($snapshots as $snapshot) {
-                $timestamp = $snapshot->collected_at->toISOString();
-                $priceStats = $snapshot->getPriceStatistics();
+            foreach ($groupedData as $intervalData) {
+                $timestamp = $intervalData['timestamp'];
+                $avgDataPoint = $intervalData['avg_data'];
 
-                // Create data point for this timestamp
+                // Create data point for this interval
                 $dataPoint = [
                     'timestamp' => $timestamp,
-                    'collected_at_unix' => $snapshot->collected_at->timestamp,
-                    'trade_type' => $snapshot->trade_type,
-                    'best_price' => $priceStats['best_price'],
-                    'avg_price' => $priceStats['avg_price'],
-                    'worst_price' => $priceStats['worst_price'],
-                    'median_price' => $priceStats['median_price'] ?? null,
-                    'volume_weighted_price' => $priceStats['volume_weighted_price'] ?? null,
-                    'total_volume' => $priceStats['total_volume'],
-                    'order_count' => $priceStats['order_count'],
-                    'price_spread' => $priceStats['price_spread'] ?? 0,
-                    'data_quality_score' => $snapshot->data_quality_score,
+                    'collected_at_unix' => strtotime($timestamp),
+                    'trade_type' => $avgDataPoint['trade_type'],
+                    'best_price' => $avgDataPoint['best_price'],
+                    'avg_price' => $avgDataPoint['avg_price'],
+                    'worst_price' => $avgDataPoint['worst_price'],
+                    'median_price' => $avgDataPoint['median_price'],
+                    'volume_weighted_price' => $avgDataPoint['volume_weighted_price'],
+                    'total_volume' => $avgDataPoint['total_volume'],
+                    'order_count' => $avgDataPoint['order_count'],
+                    'price_spread' => $avgDataPoint['price_spread'],
+                    'data_quality_score' => $avgDataPoint['data_quality_score'],
+                    'data_points_in_interval' => $intervalData['count'],
                 ];
 
                 $historicalData[] = $dataPoint;
 
                 // Separate buy and sell prices for spread calculation
-                if ($snapshot->trade_type === 'BUY') {
-                    $buyPrices[$timestamp] = $priceStats['avg_price'];
-                } elseif ($snapshot->trade_type === 'SELL') {
-                    $sellPrices[$timestamp] = $priceStats['avg_price'];
+                if ($avgDataPoint['trade_type'] === 'BUY') {
+                    $buyPrices[$timestamp] = $avgDataPoint['avg_price'];
+                } elseif ($avgDataPoint['trade_type'] === 'SELL') {
+                    $sellPrices[$timestamp] = $avgDataPoint['avg_price'];
                 }
             }
 
@@ -580,6 +585,72 @@ class BinanceP2PController extends Controller
 
         // Return coefficient of variation as percentage
         return round(($standardDeviation / $mean) * 100, 4);
+    }
+
+    /**
+     * Group snapshots by time intervals for better chart performance
+     */
+    private function groupSnapshotsByInterval($snapshots, int $intervalMinutes): array
+    {
+        $grouped = [];
+        
+        foreach ($snapshots as $snapshot) {
+            $priceStats = $snapshot->getPriceStatistics();
+            
+            // Round timestamp to nearest interval
+            $timestamp = $snapshot->collected_at;
+            $roundedMinutes = floor($timestamp->minute / $intervalMinutes) * $intervalMinutes;
+            $intervalKey = $timestamp->startOfHour()->addMinutes($roundedMinutes)->toISOString();
+            
+            $key = $intervalKey . '_' . $snapshot->trade_type;
+            
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'timestamp' => $intervalKey,
+                    'trade_type' => $snapshot->trade_type,
+                    'snapshots' => [],
+                    'price_stats' => [],
+                ];
+            }
+            
+            $grouped[$key]['snapshots'][] = $snapshot;
+            $grouped[$key]['price_stats'][] = $priceStats;
+        }
+        
+        // Calculate averages for each interval
+        $result = [];
+        foreach ($grouped as $key => $group) {
+            $stats = $group['price_stats'];
+            $snapshots = $group['snapshots'];
+            
+            if (empty($stats)) continue;
+            
+            $avgData = [
+                'trade_type' => $group['trade_type'],
+                'best_price' => collect($stats)->avg('best_price'),
+                'avg_price' => collect($stats)->avg('avg_price'),
+                'worst_price' => collect($stats)->avg('worst_price'),
+                'median_price' => collect($stats)->avg('median_price'),
+                'volume_weighted_price' => collect($stats)->avg('volume_weighted_price'),
+                'total_volume' => collect($stats)->sum('total_volume'),
+                'order_count' => collect($stats)->sum('order_count'),
+                'price_spread' => collect($stats)->avg('price_spread'),
+                'data_quality_score' => collect($snapshots)->avg('data_quality_score'),
+            ];
+            
+            $result[] = [
+                'timestamp' => $group['timestamp'],
+                'avg_data' => $avgData,
+                'count' => count($snapshots),
+            ];
+        }
+        
+        // Sort by timestamp
+        usort($result, function($a, $b) {
+            return strtotime($a['timestamp']) - strtotime($b['timestamp']);
+        });
+        
+        return $result;
     }
 
     /**

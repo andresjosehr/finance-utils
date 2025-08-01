@@ -408,7 +408,7 @@ export function ComprehensiveMarketAnalysis({
             )}
 
             {/* Side-by-Side Market Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Buy Market Analysis */}
                 {data.buy_analysis && (
                     <Card className="border-border bg-card">
@@ -578,50 +578,52 @@ export function ComprehensiveMarketAnalysis({
                         </CardContent>
                     </Card>
                 )}
-            </div>
+            
 
-            {/* Percentile Comparison */}
-            {data.buy_analysis && data.sell_analysis && (
-                <Card className="border-border bg-card">
-                    <CardHeader>
-                        <CardTitle className="text-foreground">Comparación de Percentiles</CardTitle>
-                        <CardDescription className="text-muted-foreground">Comparación de distribución de precios entre percentiles</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-border">
-                                        <th className="text-left p-2 text-foreground">Percentil</th>
-                                        <th className="text-right p-2 text-muted-foreground">Mercado Compra</th>
-                                        <th className="text-right p-2 text-muted-foreground">Mercado Venta</th>
-                                        <th className="text-right p-2 text-foreground">Diferencia</th>
-                                        <th className="text-right p-2 text-foreground">Diferencia %</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {['P25', 'P50', 'P75', 'P90', 'P95'].map((percentile) => {
-                                        const buyValue = data.buy_analysis!.percentile_analysis[percentile as keyof PercentileAnalysis];
-                                        const sellValue = data.sell_analysis!.percentile_analysis[percentile as keyof PercentileAnalysis];
-                                        const diff = sellValue - buyValue;
-                                        const diffPercent = buyValue > 0 ? (diff / buyValue) * 100 : 0;
-                                        
-                                        return (
-                                            <tr key={percentile} className="border-b border-border">
-                                                <td className="p-2 font-medium text-foreground">{percentile}</td>
-                                                <td className="p-2 text-right text-muted-foreground">{formatNumber(buyValue, 4)}</td>
-                                                <td className="p-2 text-right text-muted-foreground">{formatNumber(sellValue, 4)}</td>
-                                                <td className="p-2 text-right font-semibold text-foreground">{formatNumber(diff, 4)}</td>
-                                                <td className="p-2 text-right text-foreground">{formatPercentage(diffPercent)}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                {/* Percentile Comparison */}
+                {data.buy_analysis && data.sell_analysis && (
+                    <Card className="border-border bg-card">
+                        <CardHeader>
+                            <CardTitle className="text-foreground">Comparación de Percentiles</CardTitle>
+                            <CardDescription className="text-muted-foreground">Comparación de distribución de precios entre percentiles</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-border">
+                                            <th className="text-left p-2 text-foreground">Percentil</th>
+                                            <th className="text-right p-2 text-muted-foreground">Mercado Compra</th>
+                                            <th className="text-right p-2 text-muted-foreground">Mercado Venta</th>
+                                            <th className="text-right p-2 text-foreground">Diferencia</th>
+                                            <th className="text-right p-2 text-foreground">Diferencia %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {['P25', 'P50', 'P75', 'P90', 'P95'].map((percentile) => {
+                                            const buyValue = data.buy_analysis!.percentile_analysis[percentile as keyof PercentileAnalysis];
+                                            const sellValue = data.sell_analysis!.percentile_analysis[percentile as keyof PercentileAnalysis];
+                                            const diff = sellValue - buyValue;
+                                            const diffPercent = buyValue > 0 ? (diff / buyValue) * 100 : 0;
+                                            
+                                            return (
+                                                <tr key={percentile} className="border-b border-border">
+                                                    <td className="p-2 font-medium text-foreground">{percentile}</td>
+                                                    <td className="p-2 text-right text-muted-foreground">{formatNumber(buyValue, 4)}</td>
+                                                    <td className="p-2 text-right text-muted-foreground">{formatNumber(sellValue, 4)}</td>
+                                                    <td className="p-2 text-right font-semibold text-foreground">{formatNumber(diff, 4)}</td>
+                                                    <td className="p-2 text-right text-foreground">{formatPercentage(diffPercent)}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+            </div>
 
             {/* Historical Price Chart */}
             <Card className="border-border bg-card">
